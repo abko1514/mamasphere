@@ -1,0 +1,15 @@
+<svg width="1440" height="200" viewBox="0 0 1440 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M0 50C240 50 480 150 720 150C960 150 1200 50 1440 50V200H0V50Z" fill="currentColor">
+    <animate
+      attributeName="d"
+      dur="10s"
+      repeatCount="indefinite"
+      values="
+        M0 50C240 50 480 150 720 150C960 150 1200 50 1440 50V200H0V50Z;
+        M0 100C240 100 480 50 720 50C960 50 1200 100 1440 100V200H0V100Z;
+        M0 50C240 50 480 150 720 150C960 150 1200 50 1440 50V200H0V50Z
+      "
+    />
+  </path>
+</svg>
+
