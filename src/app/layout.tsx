@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+import Navbar from "@/app/core component/Navbar";
 import Script from "next/script";
 //import ClientLayout from "./ClientLayout";
 //import { CronBackgroundService } from "@/lib/services/cronBackgroundService";
@@ -16,6 +16,9 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
   weight: "100 900",
 });
+import AuthProvider from "@/lib/SessionProvider";
+import { getServerSession } from "next-auth";
+import { ToastContainer } from "react-toastify";
 
 export const metadata: Metadata = {
   title: "MamaSphere",
@@ -28,23 +31,25 @@ export const metadata: Metadata = {
   //CronBackgroundService.ensureCronIsRunning().catch(console.error);
 //}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getServerSession();
   return (
     <html lang="en">
       <head>
         <link rel="icon" href="/images/logo.png" />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         
+        <main>
+          <AuthProvider session={session}>
+            <ToastContainer position="top-center" />
           <Navbar />
-          <main>
             {children}
+          </AuthProvider>
             {/* Register Service Worker */}
             <Script id="register-sw" strategy="afterInteractive">
               {`
@@ -60,7 +65,7 @@ export default function RootLayout({
               }
             `}
             </Script>
-          </main>
+        </main>
         
       </body>
     </html>
