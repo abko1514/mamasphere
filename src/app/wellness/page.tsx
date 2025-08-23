@@ -1,3 +1,7 @@
+"use client";
+
+import React, { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
@@ -5,290 +9,140 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Heart,
   Calculator,
   BookOpen,
   MessageCircle,
   Dumbbell,
-  Calendar,
-  Heart,
-  Brain,
-  Target,
-  Clock,
-  Users,
 } from "lucide-react";
-import Link from "next/link";
+import MiniTools from "@/components/wellness/MiniTools";
+import BooksBlogs from "@/components/wellness/BooksBlogs";
+import WellnessChatbot from "@/components/wellness/WellnessChatbot";
+import FitnessYoga from "@/components/wellness/FitnessYoga";
 
 export default function WellnessPage() {
+  const [activeTab, setActiveTab] = useState("tools");
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-50 p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 p-4">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            Your Wellness Hub
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Comprehensive tools and resources to support your physical, mental,
-            and emotional well-being as a working mother.
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Heart className="h-12 w-12 text-pink-500" />
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+              Wellness Hub
+            </h1>
+          </div>
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+            Your comprehensive wellness companion designed for the modern
+            working mother. Track your health, discover resources, and
+            prioritize your well-being.
           </p>
         </div>
 
-        <Tabs defaultValue="tools" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8 bg-white/50 backdrop-blur-sm border border-pink-200">
+        {/* Tabs Navigation */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-8 bg-white/70 backdrop-blur-sm">
             <TabsTrigger
               value="tools"
-              className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-pink-700 font-medium"
+              className="flex items-center gap-2 data-[state=active]:bg-pink-100 data-[state=active]:text-pink-700"
             >
-              <Calculator className="w-4 h-4 mr-2" />
+              <Calculator className="h-4 w-4" />
               Mini Tools
             </TabsTrigger>
             <TabsTrigger
-              value="resources"
-              className="data-[state=active]:bg-rose-600 data-[state=active]:text-white text-rose-700 font-medium"
+              value="books"
+              className="flex items-center gap-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700"
             >
-              <BookOpen className="w-4 h-4 mr-2" />
+              <BookOpen className="h-4 w-4" />
               Books & Blogs
             </TabsTrigger>
             <TabsTrigger
-              value="chat"
-              className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-pink-700 font-medium"
+              value="chatbot"
+              className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700"
             >
-              <MessageCircle className="w-4 h-4 mr-2" />
+              <MessageCircle className="h-4 w-4" />
               AI Assistant
             </TabsTrigger>
             <TabsTrigger
               value="fitness"
-              className="data-[state=active]:bg-rose-600 data-[state=active]:text-white text-rose-700 font-medium"
+              className="flex items-center gap-2 data-[state=active]:bg-green-100 data-[state=active]:text-green-700"
             >
-              <Dumbbell className="w-4 h-4 mr-2" />
-              Yoga & Fitness
+              <Dumbbell className="h-4 w-4" />
+              Fitness & Yoga
             </TabsTrigger>
           </TabsList>
 
-          {/* Mini Tools & Calculators Tab */}
-          <TabsContent value="tools" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="border-pink-200 hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
-                      <Heart className="w-6 h-6 text-pink-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-pink-800">
-                        Pregnancy Tracker
-                      </CardTitle>
-                      <CardDescription>
-                        Track your pregnancy journey week by week
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Link href="/wellness/tools#pregnancy">
-                    <Button className="w-full bg-pink-600 hover:bg-pink-700">
-                      Start Tracking
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-
-              <Card className="border-rose-200 hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center">
-                      <Calendar className="w-6 h-6 text-rose-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-rose-800">
-                        Period Tracker
-                      </CardTitle>
-                      <CardDescription>
-                        Monitor your menstrual cycle and health
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Link href="/wellness/tools#period">
-                    <Button className="w-full bg-rose-600 hover:bg-rose-700">
-                      Track Cycle
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </div>
+          {/* Tab Contents */}
+          <TabsContent value="tools">
+            <MiniTools />
           </TabsContent>
 
-          {/* Books & Blogs Tab */}
-          <TabsContent value="resources" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="border-pink-200 hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
-                      <BookOpen className="w-6 h-6 text-pink-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-pink-800">
-                        Curated Books
-                      </CardTitle>
-                      <CardDescription>
-                        Essential reads for working mothers
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Link href="/wellness/resources#books">
-                    <Button className="w-full bg-pink-600 hover:bg-pink-700">
-                      Browse Books
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-
-              <Card className="border-rose-200 hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center">
-                      <Brain className="w-6 h-6 text-rose-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-rose-800">
-                        Expert Blogs
-                      </CardTitle>
-                      <CardDescription>
-                        Latest insights on work-life balance
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Link href="/wellness/resources#blogs">
-                    <Button className="w-full bg-rose-600 hover:bg-rose-700">
-                      Read Articles
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </div>
+          <TabsContent value="books">
+            <BooksBlogs />
           </TabsContent>
 
-          {/* AI Assistant Tab */}
-          <TabsContent value="chat" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="border-pink-200 hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
-                      <MessageCircle className="w-6 h-6 text-pink-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-pink-800">
-                        Personal Wellness Chat
-                      </CardTitle>
-                      <CardDescription>
-                        Get personalized advice and support
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Link href="/wellness/chat">
-                    <Button className="w-full bg-pink-600 hover:bg-pink-700">
-                      Start Conversation
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-
-              <Card className="border-rose-200 hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center">
-                      <Users className="w-6 h-6 text-rose-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-rose-800">
-                        Community Support
-                      </CardTitle>
-                      <CardDescription>
-                        Connect with other working mothers
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    className="w-full bg-rose-600 hover:bg-rose-700"
-                    disabled
-                  >
-                    Coming Soon
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+          <TabsContent value="chatbot">
+            <WellnessChatbot />
           </TabsContent>
 
-          {/* Yoga & Fitness Tab */}
-          <TabsContent value="fitness" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="border-pink-200 hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
-                      <Target className="w-6 h-6 text-pink-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-pink-800">
-                        Yoga Sessions
-                      </CardTitle>
-                      <CardDescription>
-                        Prenatal, postnatal & stress relief yoga
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Link href="/wellness/fitness#yoga">
-                    <Button className="w-full bg-pink-600 hover:bg-pink-700">
-                      Start Yoga
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-
-              <Card className="border-rose-200 hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center">
-                      <Clock className="w-6 h-6 text-rose-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-rose-800">
-                        Quick Workouts
-                      </CardTitle>
-                      <CardDescription>
-                        10-30 minute fitness routines for busy moms
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Link href="/wellness/fitness#workouts">
-                    <Button className="w-full bg-rose-600 hover:bg-rose-700">
-                      View Workouts
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </div>
+          <TabsContent value="fitness">
+            <FitnessYoga />
           </TabsContent>
         </Tabs>
+
+        {/* Quick Stats Overview */}
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-pink-100 to-pink-200 border-pink-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-pink-800">
+                Health Trackers
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-pink-900">4+</p>
+              <p className="text-xs text-pink-700">Active Tools</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-100 to-purple-200 border-purple-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-purple-800">
+                Resources
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-purple-900">100+</p>
+              <p className="text-xs text-purple-700">Books & Articles</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-indigo-100 to-indigo-200 border-indigo-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-indigo-800">
+                AI Support
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-indigo-900">24/7</p>
+              <p className="text-xs text-indigo-700">Available</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-100 to-green-200 border-green-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-green-800">
+                Fitness Content
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-green-900">50+</p>
+              <p className="text-xs text-green-700">Video Guides</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
