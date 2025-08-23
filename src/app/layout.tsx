@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AuthProvider from "@/lib/SessionProvider";
+import { getServerSession } from "next-auth";
+import { ToastContainer } from "react-toastify";
 
 export const metadata: Metadata = {
   title: "MamaSphere",
@@ -7,19 +10,21 @@ export const metadata: Metadata = {
 };
 
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getServerSession();
   return (
     <html lang="en">
-      <body
-        className={`antialiased`}
-      >
-          <main>
+      <body className={`antialiased`}>
+        <main>
+          <AuthProvider session={session}>
+            <ToastContainer position="top-center" />
             {children}
-          </main>
+          </AuthProvider>
+        </main>
       </body>
     </html>
   );
