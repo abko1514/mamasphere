@@ -291,7 +291,7 @@ const Hero = () => {
           
           <p className="text-xl lg:text-2xl text-white/90 mb-12 max-w-3xl mx-auto leading-relaxed">
             Join thousands of mothers who are reclaiming their time, advancing their careers, 
-            and enjoying family life with MamaSphere's intelligent support system.
+            and enjoying family life with MamaSphere&apos;s intelligent support system.
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-6">

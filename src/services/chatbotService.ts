@@ -6,13 +6,13 @@ interface ChatMessage {
   sender: 'user' | 'bot';
   timestamp: Date;
   type?: 'text' | 'suggestion' | 'wellness-tip';
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface ChatbotResponse {
   content: string;
   type?: 'text' | 'suggestion' | 'wellness-tip';
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 class ChatbotService {

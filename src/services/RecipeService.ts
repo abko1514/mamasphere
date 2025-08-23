@@ -526,7 +526,7 @@ export class RecipeService {
       'rice': { calories: 130, protein: 3, carbs: 28, fat: 0.3, fiber: 0.4 }
     };
 
-    let totalNutrition: NutritionInfo = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+    const totalNutrition: NutritionInfo = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
 
     // Estimate based on ingredients
     recipe.ingredients.forEach(ingredient => {

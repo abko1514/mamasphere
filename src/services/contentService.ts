@@ -27,6 +27,25 @@ interface Blog {
   source: string;
 }
 
+interface GoogleBooksItem {
+  id: string;
+  volumeInfo: {
+    title?: string;
+    authors?: string[];
+    description?: string;
+    averageRating?: number;
+    imageLinks?: {
+      thumbnail?: string;
+    };
+    categories?: string[];
+    publishedDate?: string;
+  };
+}
+
+interface GoogleBooksResponse {
+  items?: GoogleBooksItem[];
+}
+
 class ContentService {
   private readonly HUGGING_FACE_API = 'https://api-inference.huggingface.co/models';
   private readonly NEWS_API = 'https://newsapi.org/v2';
@@ -246,7 +265,7 @@ class ContentService {
       }
       
       // Simulate fetching from Medium, Dev.to, etc.
-      const additionalBlogs = await this.fetchBlogsFromMedium(searchQuery || 'working mothers');
+      const additionalBlogs = await this.fetchBlogsFromMedium();
       
       return [...filteredBlogs, ...additionalBlogs].slice(0, 12);
     } catch (error) {
@@ -255,28 +274,28 @@ class ContentService {
     }
   }
 
-  private async fetchBooksFromGoogleBooks(query: string): Promise<Book[]> {
+  private async fetchBooksFromGoogleBooks(searchQuery: string): Promise<Book[]> {
     try {
       // Google Books API
-      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query + ' working mothers parenting')}&maxResults=6`);
+      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery + ' working mothers parenting')}&maxResults=6`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch from Google Books API');
       }
 
-      const data = await response.json();
-      
-      return data.items?.map((item: any, index: number) => ({
+      const data = await response.json() as GoogleBooksResponse;
+
+      return data.items?.map((item: GoogleBooksItem) => ({
         id: `google_${item.id}`,
         title: item.volumeInfo.title || 'Untitled',
         author: item.volumeInfo.authors?.[0] || 'Unknown Author',
         description: item.volumeInfo.description?.substring(0, 200) + '...' || 'No description available',
         rating: item.volumeInfo.averageRating || 4.0,
-        amazonUrl: `https://amazon.com/s?k=${encodeURIComponent(item.volumeInfo.title)}`,
+        amazonUrl: `https://amazon.com/s?k=${encodeURIComponent(item.volumeInfo.title || 'book')}`,
         imageUrl: item.volumeInfo.imageLinks?.thumbnail || '/api/placeholder/120/160',
         category: 'parenting',
         tags: item.volumeInfo.categories || ['parenting', 'motherhood'],
-        publishedYear: parseInt(item.volumeInfo.publishedDate?.substring(0, 4)) || 2023
+        publishedYear: parseInt(item.volumeInfo.publishedDate?.substring(0, 4) || '2023')
       })).slice(0, 3) || [];
     } catch (error) {
       console.error('Error fetching from Google Books:', error);
@@ -284,7 +303,7 @@ class ContentService {
     }
   }
 
-  private async fetchBlogsFromMedium(query: string): Promise<Blog[]> {
+  private async fetchBlogsFromMedium(): Promise<Blog[]> {
     try {
       // Simulate fetching from RSS feeds and content APIs
       // In a real app, you'd use Medium's RSS or other blog APIs
@@ -348,16 +367,16 @@ class ContentService {
     }
   }
 
-  async searchContent(query: string, type: 'books' | 'blogs' | 'all'): Promise<{ books: Book[]; blogs: Blog[] }> {
+  async searchContent(searchQuery: string, type: 'books' | 'blogs' | 'all'): Promise<{ books: Book[]; blogs: Blog[] }> {
     try {
       const results: { books: Book[]; blogs: Blog[] } = { books: [], blogs: [] };
       
       if (type === 'books' || type === 'all') {
-        results.books = await this.fetchBooks('all', query);
+        results.books = await this.fetchBooks('all', searchQuery);
       }
       
       if (type === 'blogs' || type === 'all') {
-        results.blogs = await this.fetchBlogs('all', query);
+        results.blogs = await this.fetchBlogs('all', searchQuery);
       }
       
       return results;

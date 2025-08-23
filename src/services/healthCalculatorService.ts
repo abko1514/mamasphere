@@ -20,6 +20,13 @@ export interface PeriodHistory {
   daysUntil: number;
 }
 
+export interface HealthMetrics {
+  heartRate: number;
+  steps: number;
+  sleep: number;
+  water: number;
+}
+
 class HealthCalculatorService {
   async calculateBMI(weight: number, height: number): Promise<BMIResult> {
     // Convert height from cm to meters
@@ -131,7 +138,7 @@ class HealthCalculatorService {
     return history.reverse(); // Most recent first
   }
 
-  async fetchHealthMetrics(): Promise<any> {
+  async fetchHealthMetrics(): Promise<HealthMetrics> {
     // This would typically fetch from a health API
     // For demo purposes, return mock data
     return {

@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BookOpen, ExternalLink, Search, Star, Clock, Tag } from "lucide-react";
+import { BookOpen, ExternalLink, Search, Star, Clock} from "lucide-react";
 import { contentService } from "@/services/contentService";
 
 interface Book {

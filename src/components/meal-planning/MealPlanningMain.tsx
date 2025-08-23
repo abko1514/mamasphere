@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShoppingCart, ChefHat, Clock, Target, Plus, Trash2, Search, DollarSign,
-  Utensils, TrendingUp, Heart, Zap, Award, AlertCircle, CheckCircle, Star,
-  Sparkles, MapPin, RefreshCw, TrendingDown, Info, Calendar, User
+  Utensils, TrendingUp, Award, AlertCircle, CheckCircle, Star,
+   MapPin, RefreshCw, Info
 } from 'lucide-react';
 
 // Import all our services and types
@@ -16,7 +16,7 @@ import { NutritionTrackerService } from '../../services/NutritionTrackerService'
 
 import { 
   LocationData, GroceryItem, Recipe, MarketInsights, BatchCookingSuggestion,
-  MealEntry, NutritionInfo, UserProfile 
+  MealEntry,  UserProfile 
 } from '../../types';
 
 const MealPlanningMain: React.FC = () => {
@@ -40,14 +40,17 @@ const MealPlanningMain: React.FC = () => {
   const [batchSuggestions, setBatchSuggestions] = useState<
     BatchCookingSuggestion[]
   >([]);
-  const [selectedDietaryRestrictions, setSelectedDietaryRestrictions] =
-    useState<string[]>([]);
+  const [selectedDietaryRestrictions] = useState<string[]>([]);
 
   // Nutrition tracker states
   const [mealEntries, setMealEntries] = useState<MealEntry[]>([]);
-  const [newMealEntry, setNewMealEntry] = useState({
+  type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+  const [newMealEntry, setNewMealEntry] = useState<{
+    recipeName: string;
+    mealType: MealType;
+  }>({
     recipeName: "",
-    mealType: "breakfast" as const,
+    mealType: "breakfast",
   });
 
   // Location and loading states
@@ -532,7 +535,7 @@ const MealPlanningMain: React.FC = () => {
               key={key}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setActiveTab(key as any)}
+              onClick={() => setActiveTab(key as "grocery" | "recipes" | "batch" | "tracker")}
               className={`flex items-center gap-3 px-6 py-4 rounded-2xl transition-all duration-300 ${
                 activeTab === key
                   ? `bg-gradient-to-r ${color} text-white shadow-lg transform`
@@ -993,7 +996,7 @@ const MealPlanningMain: React.FC = () => {
                   {/* Batch Suggestions */}
                   <div>
                     <h4 className="text-xl font-semibold mb-4">
-                      This Week's Suggestions
+                      This Week&apos;s Suggestions
                     </h4>
                     <div className="space-y-4">
                       {batchSuggestions.slice(0, 3).map((suggestion) => (
@@ -1161,7 +1164,7 @@ const MealPlanningMain: React.FC = () => {
                       onChange={(e) =>
                         setNewMealEntry({
                           ...newMealEntry,
-                          mealType: e.target.value as any,
+                          mealType: e.target.value as "breakfast" | "lunch" | "dinner" | "snack",
                         })
                       }
                       className="p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500"
@@ -1182,7 +1185,7 @@ const MealPlanningMain: React.FC = () => {
 
                 {/* Today's Meals */}
                 <div className="mb-8">
-                  <h4 className="text-xl font-semibold mb-4">Today's Meals</h4>
+                  <h4 className="text-xl font-semibold mb-4">Today&apos;s Meals</h4>
                   <div className="space-y-3">
                     {mealEntries.map((entry) => (
                       <div

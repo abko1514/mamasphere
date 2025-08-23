@@ -1,6 +1,22 @@
 // services/LocationPricingService.ts
 import { LocationData, PriceComparisonResult, MarketInsights } from '@/types';
 
+// Define interfaces for government API response
+interface GovernmentPriceRecord {
+  commodity?: string;
+  market?: string;
+  state?: string;
+  modal_price?: string | number;
+  min_price?: string | number;
+  max_price?: string | number;
+  price?: string | number;
+  [key: string]: string | number | undefined;
+}
+
+interface GovernmentApiResponse {
+  records?: GovernmentPriceRecord[];
+}
+
 export class LocationPricingService {
   private static locationCache: LocationData | null = null;
   private static priceCache: Map<string, { price: number; timestamp: number; location: string }> = new Map();
@@ -292,10 +308,10 @@ export class LocationPricingService {
 
       if (!response.ok) throw new Error('Government API failed');
 
-      const data = await response.json();
+      const data: GovernmentApiResponse = await response.json();
       
       if (data.records && data.records.length > 0) {
-        return data.records.map((record: any) => ({
+        return data.records.map((record: GovernmentPriceRecord) => ({
           source: 'Govt. Market Data',
           price: this.parseGovernmentPrice(record, itemName),
           unit: 'kg',
@@ -313,12 +329,12 @@ export class LocationPricingService {
   /**
    * Parse government price data
    */
-  private static parseGovernmentPrice(record: any, itemName: string): number {
-    const priceFields = ['modal_price', 'min_price', 'max_price', 'price'];
+  private static parseGovernmentPrice(record: GovernmentPriceRecord, itemName: string): number {
+    const priceFields = ['modal_price', 'min_price', 'max_price', 'price'] as const;
     
     for (const field of priceFields) {
       if (record[field]) {
-        const price = parseFloat(record[field]);
+        const price = parseFloat(String(record[field]));
         if (!isNaN(price) && price > 0) {
           return Math.round(price);
         }

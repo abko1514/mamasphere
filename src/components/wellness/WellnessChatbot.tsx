@@ -24,7 +24,32 @@ interface Message {
   sender: "user" | "bot";
   timestamp: Date;
   type?: "text" | "suggestion" | "wellness-tip";
-  metadata?: any;
+  metadata?: Record<string, unknown>;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
 }
 
 export default function WellnessChatbot() {
@@ -42,7 +67,7 @@ export default function WellnessChatbot() {
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognition = useRef<any>(null);
+  const recognition = useRef<SpeechRecognition | null>(null);
 
   const quickSuggestions = [
     { text: "Tips for work-life balance", icon: "⚖️" },
@@ -61,14 +86,13 @@ export default function WellnessChatbot() {
     // Initialize speech recognition
     if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
       const SpeechRecognition =
-        (window as any).SpeechRecognition ||
-        (window as any).webkitSpeechRecognition;
+        window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition.current = new SpeechRecognition();
       recognition.current.continuous = false;
       recognition.current.interimResults = false;
       recognition.current.lang = "en-US";
 
-      recognition.current.onresult = (event: any) => {
+      recognition.current.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript;
         setInputMessage(transcript);
         setIsListening(false);
@@ -113,7 +137,7 @@ export default function WellnessChatbot() {
       };
 
       setMessages((prev) => [...prev, botMessage]);
-    } catch (error) {
+    } catch {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         content:
@@ -194,13 +218,15 @@ export default function WellnessChatbot() {
 
           <p className="whitespace-pre-wrap">{message.content}</p>
 
-          {message.metadata?.tags && (
+          {Array.isArray(message.metadata?.tags) && (
             <div className="flex flex-wrap gap-1 mt-2">
-              {message.metadata.tags.map((tag: string, index: number) => (
-                <Badge key={index} variant="outline" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
+              {(message.metadata?.tags as string[]).map(
+                (tag: string, index: number) => (
+                  <Badge key={index} variant="outline" className="text-xs">
+                    {tag}
+                  </Badge>
+                )
+              )}
             </div>
           )}
 
