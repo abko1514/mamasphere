@@ -33,6 +33,26 @@ interface FitnessFilters {
   duration?: string;
 }
 
+interface YouTubeAPIItem {
+  id: {
+    videoId: string;
+  };
+  snippet: {
+    title: string;
+    channelTitle: string;
+    description?: string;
+    thumbnails?: {
+      medium?: {
+        url: string;
+      };
+    };
+  };
+}
+
+interface YouTubeAPIResponse {
+  items?: YouTubeAPIItem[];
+}
+
 class FitnessService {
   private readonly YOUTUBE_API_KEY = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
   private readonly YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3/search';
@@ -280,23 +300,23 @@ class FitnessService {
         throw new Error(`YouTube API error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as YouTubeAPIResponse;
       
-      return data.items?.map((item: any, index: number) => ({
+      return data.items?.map((item: YouTubeAPIItem) => ({
         id: `youtube_${item.id.videoId}`,
         title: item.snippet.title,
         instructor: item.snippet.channelTitle,
         duration: this.estimateDuration(item.snippet.title),
-        difficulty: this.estimateDifficulty(item.snippet.title, item.snippet.description),
+        difficulty: this.estimateDifficulty(item.snippet.title, item.snippet.description || ''),
         category: filters.category || 'fitness',
         description: item.snippet.description?.substring(0, 150) + '...' || 'No description available',
         thumbnailUrl: item.snippet.thumbnails?.medium?.url || '/api/placeholder/320/180',
         youtubeUrl: `https://youtube.com/watch?v=${item.id.videoId}`,
         rating: 4.0 + Math.random() * 1, // Simulated rating
         views: this.generateViewCount(),
-        equipment: this.extractEquipment(item.snippet.title, item.snippet.description),
+        equipment: this.extractEquipment(item.snippet.title, item.snippet.description || ''),
         tags: this.extractTags(item.snippet.title),
-        specialFocus: this.extractSpecialFocus(item.snippet.title, item.snippet.description)
+        specialFocus: this.extractSpecialFocus(item.snippet.title, item.snippet.description || '')
       })).slice(0, 3) || [];
     } catch (error) {
       console.error('Error fetching YouTube videos:', error);
@@ -378,7 +398,7 @@ class FitnessService {
 
   private extractEquipment(title: string, description: string): string[] {
     const text = (title + ' ' + description).toLowerCase();
-    const equipment = [];
+    const equipment: string[] = [];
     
     const equipmentKeywords = {
       'dumbbells': ['dumbbell', 'weight'],
@@ -399,7 +419,7 @@ class FitnessService {
   }
 
   private extractTags(title: string): string[] {
-    const tags = [];
+    const tags: string[] = [];
     const lowerTitle = title.toLowerCase();
     
     const tagKeywords = {
@@ -424,7 +444,7 @@ class FitnessService {
 
   private extractSpecialFocus(title: string, description: string): string[] {
     const text = (title + ' ' + description).toLowerCase();
-    const focus = [];
+    const focus: string[] = [];
     
     const focusAreas = {
       'Back pain relief': ['back pain', 'posture', 'spine'],

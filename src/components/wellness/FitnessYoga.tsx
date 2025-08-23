@@ -505,10 +505,10 @@ export default function FitnessYoga() {
       {/* Motivational Section */}
       <Card className="bg-gradient-to-r from-pink-400 to-purple-500 text-white">
         <CardContent className="p-6 text-center">
-          <h3 className="text-2xl font-bold mb-3">🌟 You've Got This, Mama!</h3>
+          <h3 className="text-2xl font-bold mb-3">🌟 You&apos;ve Got This, Mama!</h3>
           <p className="text-pink-100 mb-4 max-w-2xl mx-auto">
-            Remember, taking care of your physical health isn't just about you -
-            it's about being the best version of yourself for your family. Every
+            Remember, taking care of your physical health isn&apos;t just about you -
+            it&apos;s about being the best version of yourself for your family. Every
             workout, no matter how short, is an investment in your well-being
             and energy.
           </p>

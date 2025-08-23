@@ -1,5 +1,5 @@
 // services/NutritionTrackerService.ts
-import { MealEntry, NutritionInfo, UserProfile, Recipe } from '@/types';
+import { MealEntry, NutritionInfo, UserProfile } from '@/types';
 
 export class NutritionTrackerService {
   private static mealEntries: MealEntry[] = [];
@@ -245,7 +245,7 @@ export class NutritionTrackerService {
     }
 
     // Try ingredient-based estimation
-    let estimatedNutrition: NutritionInfo = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+    const estimatedNutrition: NutritionInfo = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
     let matchCount = 0;
 
     // Look for multiple ingredients
@@ -360,7 +360,7 @@ export class NutritionTrackerService {
     const targets = this.calculateMacroTargets(userProfile);
 
     // Calorie recommendations
-    const calorieDeficit = userProfile.dailyCalorieGoal - dailyTotals.calories;
+    const calorieDeficit = (userProfile.dailyCalorieGoal || this.calculateDailyCalorieNeeds(userProfile)) - dailyTotals.calories;
     if (Math.abs(calorieDeficit) > 200) {
       recommendations.push({
         category: 'Calorie Balance',
@@ -441,8 +441,9 @@ export class NutritionTrackerService {
     const currentDate = new Date().toISOString().split('T')[0];
     const dailyTotals = this.getDailyNutritionTotals(currentDate);
     const targets = this.calculateMacroTargets(userProfile);
+    const dailyCalorieGoal = userProfile.dailyCalorieGoal || this.calculateDailyCalorieNeeds(userProfile);
 
-    const remainingCalories = userProfile.dailyCalorieGoal - dailyTotals.calories;
+    const remainingCalories = dailyCalorieGoal - dailyTotals.calories;
     const remainingProtein = targets.protein.grams - dailyTotals.protein;
 
     // Estimate calories for this meal type
@@ -457,8 +458,8 @@ export class NutritionTrackerService {
     let targetProtein = Math.max(remainingProtein * mealCalorieRatios[mealType], 5);
 
     // Adjust if too much remaining
-    if (remainingCalories > userProfile.dailyCalorieGoal * 0.7) {
-      targetCalories = userProfile.dailyCalorieGoal * mealCalorieRatios[mealType];
+    if (remainingCalories > dailyCalorieGoal * 0.7) {
+      targetCalories = dailyCalorieGoal * mealCalorieRatios[mealType];
       targetProtein = targets.protein.grams * mealCalorieRatios[mealType];
     }
 
@@ -467,7 +468,7 @@ export class NutritionTrackerService {
       targetCalories,
       targetProtein,
       mealType,
-      userProfile.dietaryRestrictions
+      userProfile.dietaryRestrictions || []
     );
 
     const reasoning = `Based on your remaining daily targets: ${Math.round(remainingCalories)} calories and ${Math.round(remainingProtein)}g protein needed.`;
@@ -699,10 +700,10 @@ export class NutritionTrackerService {
    * Initialize with sample data for demo
    */
   static initializeSampleData(): void {
-    const today = new Date().toISOString().split('T')[0];
+    
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    // Add sample entries for today
+    // Add sample entries for current date
     this.addMealEntry('Oats Upma with Vegetables', 'breakfast', 1);
     this.addMealEntry('Dal Rice with Curry', 'lunch', 1);
     this.addMealEntry('Mixed Fruit Salad', 'snack', 0.5);

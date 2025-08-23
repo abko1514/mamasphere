@@ -301,8 +301,7 @@ export class BatchCookingService {
    * Get meal prep schedule for the week
    */
   static getWeeklyMealPrepSchedule(
-    userProfile?: UserProfile,
-    dietaryRestrictions: string[] = []
+    
   ): { day: string; tasks: { time: string; task: string; duration: number }[] }[] {
     
     const schedule = [
