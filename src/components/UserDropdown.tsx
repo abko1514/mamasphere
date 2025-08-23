@@ -42,10 +42,10 @@ const UserDropdown = () => {
     fetchUserData();
   }, [user?.email]);
 
-  const getDashboardLink = () => {
-    if (!dbUser?.role) return "/";
-    return dbUser.role === "user" ? "/user" : "/editor";
-  };
+  // const getDashboardLink = () => {
+  //   if (!dbUser?.role) return "/";
+  //   return dbUser.role === "user" ? "/user" : "/editor";
+  // };
 
   return (
     <div className="">
@@ -81,7 +81,7 @@ const UserDropdown = () => {
                     Feed
                   </Button>
                 </Link> */}
-                <Link href={getDashboardLink()} passHref>
+                <Link href="/dashboard" passHref>
                   <Button variant="ghost" className="w-full text-left">
                     Dashboard
                   </Button>

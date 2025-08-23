@@ -17,6 +17,22 @@ const userSchema = new Schema(
       type: String,
       required: false,
     },
+    age: {
+      type: Number,
+      required: false,
+      min: 18,
+      max: 100,
+    },
+    gender: {
+      type: String,
+      enum: ["female", "male", "non-binary", "prefer-not-to-say"],
+      required: false,
+    },
+    occupation: {
+      type: String,
+      required: false,
+      trim: true,
+    },
     role: {
       type: String,
       enum: ["user"],
