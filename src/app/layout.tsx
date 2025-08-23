@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+import Navbar from "@/app/core component/Navbar";
 import Script from "next/script";
 //import ClientLayout from "./ClientLayout";
 //import { CronBackgroundService } from "@/lib/services/cronBackgroundService";
@@ -44,10 +44,10 @@ export default async function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         
-          <Navbar />
         <main>
           <AuthProvider session={session}>
             <ToastContainer position="top-center" />
+          <Navbar />
             {children}
           </AuthProvider>
             {/* Register Service Worker */}

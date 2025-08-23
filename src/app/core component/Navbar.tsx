@@ -2,43 +2,42 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { useSession } from "next-auth/react";
+import UserDropdown from "../../components/UserDropdown"; // Adjust path as needed
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-
+  const { data: session, status } = useSession();
+  console.log(setIsOpen);
   return (
     <nav className="bg-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex-shrink-0 flex items-center">
-            <Link href="/" className="text-2xl font-bold text-pink-600 flex items-center gap-3">
-            <img src="images/logo.png" alt="Logo" className="w-8 h-8"/>
+            <Link
+              href="/"
+              className="text-2xl font-bold text-pink-600 flex items-center gap-3"
+            >
+              <img src="images/logo.png" alt="Logo" className="w-8 h-8" />
               MamaSphere
             </Link>
           </div>
-          <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+          <div className="hidden sm:ml-6 sm:flex sm:space-x-8 items-center">
             <NavLink href="/features">Features</NavLink>
             <NavLink href="/about">About</NavLink>
             <NavLink href="/contact">Contact</NavLink>
             <NavLink href="/faq">FAQ</NavLink>
-            {/* <NavLink href="">
-              <ModeToggle />
-            </NavLink> */}
+
+            {/* Conditionally render Login link or UserDropdown */}
+            {status === "loading" ? (
+              <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
+            ) : session ? (
+              <UserDropdown />
+            ) : (
+              <NavLink href="/login">Login</NavLink>
+            )}
           </div>
-          <div className="-mr-2 flex items-center sm:hidden">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500"
-            >
-              <span className="sr-only">Open main menu</span>
-              {isOpen ? (
-                <X className="block h-6 w-6" />
-              ) : (
-                <Menu className="block h-6 w-6" />
-              )}
-            </button>
-          </div>
+         
         </div>
       </div>
 
@@ -47,8 +46,21 @@ const Navbar = () => {
           <div className="pt-2 pb-3 space-y-1">
             <MobileNavLink href="/features">Features</MobileNavLink>
             <MobileNavLink href="/about">About</MobileNavLink>
-            <MobileNavLink href="/community">Community</MobileNavLink>
-            {/* <ModeToggle /> */}
+            <MobileNavLink href="/contact">Contact</MobileNavLink>
+            <MobileNavLink href="/faq">FAQ</MobileNavLink>
+
+            {/* Mobile menu authentication section */}
+            {status === "loading" ? (
+              <div className="pl-3 pr-4 py-2">
+                <div className="w-6 h-6 bg-gray-200 rounded"></div>
+              </div>
+            ) : session ? (
+              <div className="pl-3 pr-4 py-2">
+                <UserDropdown />
+              </div>
+            ) : (
+              <MobileNavLink href="/login">Login</MobileNavLink>
+            )}
           </div>
         </div>
       )}
