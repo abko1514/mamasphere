@@ -1,9 +1,10 @@
-// 5. Enhanced lib/cron/reminderCron.ts - More frequent checks
-import { ReminderService } from "../services/reminderService";
+// 2. lib/cron/reminderCron.ts - Enhanced with better error handling and logging
+import { ReminderService } from '../services/reminderService';
 
 export class ReminderCron {
   private static interval: NodeJS.Timeout | null = null;
   private static isRunning = false;
+  private static readonly CHECK_INTERVAL = 30000; // 30 seconds
 
   static start(): void {
     if (this.interval) {
@@ -21,11 +22,13 @@ export class ReminderCron {
         await ReminderService.processPendingReminders();
         const endTime = new Date();
         const duration = endTime.getTime() - startTime.getTime();
-        console.log(`⚡ Reminder check completed in ${duration}ms`);
+        console.log(
+          `⚡ Reminder check completed in ${duration}ms at ${endTime.toLocaleString()}`
+        );
       } catch (error) {
         console.error("❌ Reminder cron error:", error);
       }
-    }, 30000); // Every 30 seconds
+    }, this.CHECK_INTERVAL);
 
     // Also run immediately on startup
     ReminderService.processPendingReminders()
@@ -33,6 +36,17 @@ export class ReminderCron {
       .catch((error) =>
         console.error("❌ Initial reminder check failed:", error)
       );
+
+    // Handle process termination
+    process.on("SIGTERM", () => {
+      console.log("📨 SIGTERM received, stopping reminder cron...");
+      this.stop();
+    });
+
+    process.on("SIGINT", () => {
+      console.log("📨 SIGINT received, stopping reminder cron...");
+      this.stop();
+    });
   }
 
   static stop(): void {
@@ -46,5 +60,12 @@ export class ReminderCron {
 
   static isActive(): boolean {
     return this.isRunning;
+  }
+
+  static getStatus(): { isRunning: boolean; checkInterval: number } {
+    return {
+      isRunning: this.isRunning,
+      checkInterval: this.CHECK_INTERVAL,
+    };
   }
 }

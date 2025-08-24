@@ -1,3 +1,4 @@
+// 1. lib/services/reminderService.ts - Fixed version
 import { EmailService } from "./emailService";
 import { dbConnect } from "@/lib/dbConnect";
 import mongoose from "mongoose";
@@ -5,7 +6,11 @@ import mongoose from "mongoose";
 // Reminder Schema
 const reminderSchema = new mongoose.Schema({
   taskId: { type: String, required: true },
-  userId: { type: String, required: true },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Users",
+    required: true,
+  },
   reminderTime: { type: Date, required: true },
   type: {
     type: String,
@@ -17,36 +22,9 @@ const reminderSchema = new mongoose.Schema({
   sentAt: { type: Date },
 });
 
-// User Schema (for reference - you might have this elsewhere)
-const userSchema = new mongoose.Schema({
-  userId: { type: String, required: true, unique: true },
-  email: { type: String, required: true },
-  name: String,
-  timezone: String,
-  notifications: {
-    taskReminders: { type: Boolean, default: true },
-    overdueReminders: { type: Boolean, default: true },
-    dailyDigest: { type: Boolean, default: true },
-  },
-});
-
-// Task Schema (for reference - you might have this elsewhere)
-const taskSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: String,
-  userId: { type: String, required: true },
-  dueDate: { type: Date, required: true },
-  priority: Number,
-  category: String,
-  completed: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now },
-});
-
 // Models
 const Reminder =
   mongoose.models.Reminder || mongoose.model("Reminder", reminderSchema);
-const User = mongoose.models.User || mongoose.model("User", userSchema);
-const Task = mongoose.models.Task || mongoose.model("Task", taskSchema);
 
 interface ScheduledReminder {
   _id?: string;
@@ -65,7 +43,6 @@ interface UserData {
   timezone?: string;
 }
 
-// Task interface used for email operations
 interface TaskForEmail {
   _id: string;
   title: string;
@@ -121,7 +98,7 @@ export class ReminderService {
       const pendingReminders = await Reminder.find({
         sent: false,
         reminderTime: { $lte: now },
-      });
+      }).populate("userId");
 
       console.log(`🔔 Processing ${pendingReminders.length} pending reminders`);
 
@@ -155,6 +132,15 @@ export class ReminderService {
     try {
       await dbConnect();
 
+      // Import task model
+      const Task = mongoose.models.Task;
+      const Users = mongoose.models.Users;
+
+      if (!Task || !Users) {
+        console.error("Task or Users model not found");
+        return;
+      }
+
       // Get the task
       const task = await Task.findById(reminder.taskId);
 
@@ -163,17 +149,11 @@ export class ReminderService {
         return;
       }
 
-      // Get user data
-      const user = await User.findOne({ userId: reminder.userId });
+      // Get user data using the user model from your schema
+      const user = await Users.findById(reminder.userId);
 
       if (!user || !user.email) {
         console.log("User not found or no email for userId:", reminder.userId);
-        return;
-      }
-
-      // Check if user has task reminders enabled
-      if (user.notifications && user.notifications.taskReminders === false) {
-        console.log("Task reminders disabled for user:", reminder.userId);
         return;
       }
 
@@ -192,7 +172,6 @@ export class ReminderService {
       const userData: UserData = {
         email: user.email,
         name: user.name,
-        timezone: user.timezone,
       };
 
       // Send reminder email
@@ -214,17 +193,19 @@ export class ReminderService {
     try {
       await dbConnect();
 
-      // Get user data
-      const user = await User.findOne({ userId: reminder.userId });
+      const Task = mongoose.models.Task;
+      const Users = mongoose.models.Users;
 
-      if (!user || !user.email) {
-        console.log("User not found or no email for userId:", reminder.userId);
+      if (!Task || !Users) {
+        console.error("Task or Users model not found");
         return;
       }
 
-      // Check if user has overdue reminders enabled
-      if (user.notifications && user.notifications.overdueReminders === false) {
-        console.log("Overdue reminders disabled for user:", reminder.userId);
+      // Get user data
+      const user = await Users.findById(reminder.userId);
+
+      if (!user || !user.email) {
+        console.log("User not found or no email for userId:", reminder.userId);
         return;
       }
 
@@ -241,7 +222,7 @@ export class ReminderService {
       }
 
       // Prepare tasks for email
-      const tasksForEmail: TaskForEmail[] = overdueTasks.map((task) => ({
+      const tasksForEmail: TaskForEmail[] = overdueTasks.map((task: any) => ({
         _id: task._id.toString(),
         title: task.title,
         description: task.description,
@@ -255,7 +236,6 @@ export class ReminderService {
       const userData: UserData = {
         email: user.email,
         name: user.name,
-        timezone: user.timezone,
       };
 
       // Send overdue notification
@@ -285,17 +265,19 @@ export class ReminderService {
     try {
       await dbConnect();
 
-      // Get user data
-      const user = await User.findOne({ userId: reminder.userId });
+      const Task = mongoose.models.Task;
+      const Users = mongoose.models.Users;
 
-      if (!user || !user.email) {
-        console.log("User not found or no email for userId:", reminder.userId);
+      if (!Task || !Users) {
+        console.error("Task or Users model not found");
         return;
       }
 
-      // Check if user has daily digest enabled
-      if (user.notifications && user.notifications.dailyDigest === false) {
-        console.log("Daily digest disabled for user:", reminder.userId);
+      // Get user data
+      const user = await Users.findById(reminder.userId);
+
+      if (!user || !user.email) {
+        console.log("User not found or no email for userId:", reminder.userId);
         return;
       }
 
@@ -325,7 +307,7 @@ export class ReminderService {
       }
 
       // Prepare tasks for email
-      const tasksForEmail: TaskForEmail[] = relevantTasks.map((task) => ({
+      const tasksForEmail: TaskForEmail[] = relevantTasks.map((task: any) => ({
         _id: task._id.toString(),
         title: task.title,
         description: task.description,
@@ -339,7 +321,6 @@ export class ReminderService {
       const userData: UserData = {
         email: user.email,
         name: user.name,
-        timezone: user.timezone,
       };
 
       // Send daily digest
@@ -376,7 +357,7 @@ export class ReminderService {
       tomorrow.setHours(8, 0, 0, 0);
 
       const reminder = new Reminder({
-        taskId: "", // Not specific to a task
+        taskId: "daily-digest-" + userId, // Unique identifier
         userId,
         reminderTime: tomorrow,
         type: "daily-digest",
@@ -407,7 +388,7 @@ export class ReminderService {
       tomorrow.setHours(18, 0, 0, 0);
 
       const reminder = new Reminder({
-        taskId: "", // Not specific to a task
+        taskId: "overdue-check-" + userId, // Unique identifier
         userId,
         reminderTime: tomorrow,
         type: "overdue-check",

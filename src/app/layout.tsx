@@ -27,9 +27,9 @@ export const metadata: Metadata = {
 };
 
 //Initialize cron on server startup
-if (typeof window === "undefined") {
-  CronBackgroundService.ensureCronIsRunning().catch(console.error);
-}
+// if (typeof window === "undefined") {
+//   CronBackgroundService.ensureCronIsRunning().catch(console.error);
+// }
 
 export default async function RootLayout({
   children,

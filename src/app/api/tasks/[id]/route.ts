@@ -1,18 +1,25 @@
+// app/api/tasks/[id]/route.ts - Simplified without email functionality
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/dbConnect";
 import mongoose from "mongoose";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 interface Params {
   id: string;
 }
 
-// Task Schema (should match the one in your main tasks route)
+// Task Schema (same as in main route)
 const taskSchema = new mongoose.Schema({
-  userId: { type: String, required: true },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Users",
+    required: true,
+  },
   title: { type: String, required: true },
   description: { type: String, default: "" },
   dueDate: { type: Date, default: null },
-  reminder: { type: String, default: null },
+  reminder: { type: Date, default: null },
   priority: { type: Number, default: 3 },
   aiSuggested: { type: Boolean, default: false },
   category: { type: String, default: "general" },
@@ -27,8 +34,14 @@ const Task = mongoose.models.Task || mongoose.model("Task", taskSchema);
 export async function PUT(
   request: Request,
   { params }: { params: Params }
-): Promise<Response> {
+): Promise<NextResponse> {
   try {
+    // Get authenticated user
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     await dbConnect();
 
     const { id } = params;
@@ -44,13 +57,17 @@ export async function PUT(
       updatedAt: new Date(),
     };
 
-    // Convert dueDate to Date object if it exists
+    // Convert dates to Date objects if they exist
     if (updateData.dueDate) {
       updateData.dueDate = new Date(updateData.dueDate);
     }
+    if (updateData.reminder) {
+      updateData.reminder = new Date(updateData.reminder);
+    }
 
-    const result = await Task.findByIdAndUpdate(
-      id,
+    // Ensure user can only update their own tasks
+    const result = await Task.findOneAndUpdate(
+      { _id: id, userId: session.user.email },
       { $set: updateData },
       { new: true, runValidators: true }
     );
@@ -81,8 +98,14 @@ export async function PUT(
 export async function DELETE(
   request: Request,
   { params }: { params: Params }
-): Promise<Response> {
+): Promise<NextResponse> {
   try {
+    // Get authenticated user
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     await dbConnect();
 
     const { id } = params;
@@ -91,7 +114,11 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid task ID" }, { status: 400 });
     }
 
-    const result = await Task.findByIdAndDelete(id);
+    // Ensure user can only delete their own tasks
+    const result = await Task.findOneAndDelete({
+      _id: id,
+      userId: session.user.email,
+    });
 
     if (!result) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });

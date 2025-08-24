@@ -1,4 +1,4 @@
-// hooks/useTasks.ts 
+// lib/hooks/useTasks.ts - Simplified without email functionality
 import { useState, useEffect, useCallback } from "react";
 
 interface Task {
@@ -40,38 +40,21 @@ interface CreateTaskResponse {
     category: string;
     aiProcessed: boolean;
   };
-  emailScheduled?: boolean;
 }
 
-interface NotificationPreferences {
-  email: string;
-  name?: string;
-  dailyDigest?: boolean;
-  overdueReminders?: boolean;
-  taskReminders?: boolean;
-}
-
-export function useTasks(userId: string) {
+export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(false);
 
   const fetchTasks = useCallback(async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);
 
-      console.log("Fetching tasks for user:", userId);
+      console.log("Fetching tasks for authenticated user");
 
-      const response = await fetch(
-        `/api/tasks?userId=${encodeURIComponent(userId)}`
-      );
+      const response = await fetch("/api/tasks");
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -94,18 +77,18 @@ export function useTasks(userId: string) {
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, []);
 
   const addTask = async (taskData: CreateTaskData): Promise<Task> => {
     try {
-      console.log("Adding task with email scheduling:", taskData);
+      console.log("Adding task:", taskData);
 
       const response = await fetch("/api/tasks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ ...taskData, userId }),
+        body: JSON.stringify(taskData),
       });
 
       if (!response.ok) {
@@ -116,12 +99,7 @@ export function useTasks(userId: string) {
       }
 
       const data: CreateTaskResponse = await response.json();
-      console.log("Task created with email scheduling:", data.task);
-
-      // Show notification about email scheduling
-      if (data.emailScheduled) {
-        console.log("📧 Email reminder scheduled for this task!");
-      }
+      console.log("Task created:", data.task);
 
       setTasks((prev) => [data.task, ...prev]);
       setError(null);
@@ -156,31 +134,6 @@ export function useTasks(userId: string) {
         throw new Error(
           errorData.error || `HTTP error! status: ${response.status}`
         );
-      }
-
-      // If updating reminder, schedule new email reminder via API
-      if (updates.reminder) {
-        try {
-          const reminderResponse = await fetch("/api/reminders/schedule", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              taskId,
-              userId,
-              reminderTime: updates.reminder,
-            }),
-          });
-
-          if (reminderResponse.ok) {
-            console.log("📧 Updated email reminder scheduled");
-          } else {
-            console.error("Failed to reschedule email reminder");
-          }
-        } catch (reminderError) {
-          console.error("Failed to reschedule email reminder:", reminderError);
-        }
       }
 
       setTasks((prev) =>
@@ -233,81 +186,43 @@ export function useTasks(userId: string) {
     await updateTask(taskId, { completed });
   };
 
-  // Setup email notifications
-  const setupEmailNotifications = async (
-    preferences: NotificationPreferences
-  ): Promise<boolean> => {
-    try {
-      console.log("Setting up email notifications:", preferences);
+  // Get upcoming tasks with reminders for web notifications
+  const getUpcomingReminders = useCallback((): Task[] => {
+    const now = new Date();
+    const inOneHour = new Date(now.getTime() + 60 * 60 * 1000);
 
-      const response = await fetch("/api/notifications/subscribe", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...preferences, userId }),
-      });
+    return tasks.filter((task) => {
+      if (task.completed || !task.reminder) return false;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Email setup error:", errorData);
-        throw new Error(errorData.error || "Failed to setup email notifications");
-      }
+      const reminderTime = new Date(task.reminder);
+      return reminderTime > now && reminderTime <= inOneHour;
+    });
+  }, [tasks]);
 
-      const result = await response.json();
-      console.log("Email notifications setup result:", result);
+  // Get overdue tasks
+  const getOverdueTasks = useCallback((): Task[] => {
+    const now = new Date();
+    return tasks.filter((task) => {
+      if (task.completed || !task.dueDate) return false;
+      return new Date(task.dueDate) < now;
+    });
+  }, [tasks]);
 
-      setEmailNotificationsEnabled(true);
-      console.log("📧 Email notifications setup successfully");
-      return true;
-    } catch (error) {
-      console.error("Failed to setup email notifications:", error);
-      return false;
-    }
-  };
+  // Get tasks due today
+  const getTodayTasks = useCallback((): Task[] => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-  // Send test email
-  const sendTestEmail = async (
-    email: string,
-    name?: string
-  ): Promise<boolean> => {
-    try {
-      console.log("Sending test email to:", email);
+    return tasks.filter((task) => {
+      if (task.completed || !task.dueDate) return false;
+      const dueDate = new Date(task.dueDate);
+      return dueDate >= today && dueDate < tomorrow;
+    });
+  }, [tasks]);
 
-      const response = await fetch("/api/test-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, name }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Test email error:", errorData);
-        return false;
-      }
-
-      const result = await response.json();
-      console.log("Test email result:", result);
-      return true;
-    } catch (error) {
-      console.error("Failed to send test email:", error);
-      return false;
-    }
-  };
-
-  // Check email setup status
-  useEffect(() => {
-    const checkEmailSetup = () => {
-      const hasEmailSetup = localStorage.getItem(`email-setup-${userId}`);
-      setEmailNotificationsEnabled(!!hasEmailSetup);
-    };
-
-    checkEmailSetup();
-  }, [userId]);
-
-  // Fetch tasks when userId changes
+  // Fetch tasks on component mount
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
@@ -321,8 +236,9 @@ export function useTasks(userId: string) {
     deleteTask,
     toggleComplete,
     refreshTasks: fetchTasks,
-    setupEmailNotifications,
-    sendTestEmail,
-    emailNotificationsEnabled,
+    // Utility functions for web notifications
+    getUpcomingReminders,
+    getOverdueTasks,
+    getTodayTasks,
   };
 }
