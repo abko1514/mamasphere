@@ -43,7 +43,23 @@ export function FreelanceSection({
         userId,
         filters
       );
-      setOpportunities(data);
+      // Map the data to ensure it matches the expected FreelanceOpportunity shape
+      const mappedData = data.map((item: any) => ({
+        _id: item._id,
+        clientName: item.clientName,
+        projectType: item.projectType,
+        budget: item.budget,
+        experienceLevel: item.experienceLevel,
+        duration: item.duration,
+        isRemote: item.isRemote,
+        description: item.description,
+        skillsRequired: item.skillsRequired,
+        applicationDeadline: item.applicationDeadline,
+        postedDate: item.postedDate,
+        title: item.title ?? "", // Provide a default if missing
+        matchScore: item.matchScore ?? 0, // Provide a default if missing
+      }));
+      setOpportunities(mappedData);
     } catch (error) {
       console.error("Error loading freelance opportunities:", error);
     } finally {
@@ -160,7 +176,7 @@ export function FreelanceSection({
       </div>
 
       <div className="space-y-6">
-        {opportunities.map((opp) => (
+        {opportunities?.map((opp) => (
           <div
             key={opp._id}
             className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-shadow border border-gray-100"
@@ -177,8 +193,8 @@ export function FreelanceSection({
                     {opp.projectType}
                   </span>
                   <span className="flex items-center gap-1">
-                    <DollarSign size={16} />${opp.budget.min.toLocaleString()} -
-                    ${opp.budget.max.toLocaleString()} ({opp.budget.type})
+                    <DollarSign size={16} />${opp?.budget?.min.toLocaleString()} -
+                    ${opp?.budget?.max.toLocaleString()} ({opp?.budget?.type})
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock size={16} />

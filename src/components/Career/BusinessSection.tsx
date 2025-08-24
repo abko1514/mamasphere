@@ -262,7 +262,7 @@ export function BusinessSection({
 
           {/* Contact Actions */}
           <div className="flex gap-2 mb-4">
-            {business.contactInfo.email && (
+            {business?.contactInfo?.email && (
               <button
                 onClick={() => handleContactBusiness(business)}
                 className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
@@ -272,7 +272,7 @@ export function BusinessSection({
               </button>
             )}
 
-            {business.contactInfo.website && (
+            {business?.contactInfo?.website && (
               <a
                 href={business.contactInfo.website}
                 target="_blank"
@@ -286,7 +286,7 @@ export function BusinessSection({
           </div>
 
           {/* Social Media Links */}
-          {business.contactInfo.socialMedia && (
+          {business?.contactInfo?.socialMedia && (
             <div className="flex items-center justify-between">
               <div className="flex gap-3">
                 {Object.entries(business.contactInfo.socialMedia).map(

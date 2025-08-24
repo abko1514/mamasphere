@@ -54,12 +54,28 @@ async function generateAIInsights(user: UserProfile) {
     careerPathSuggestions: string[];
     skillGapAnalysis: string[];
     marketTrends: string[];
+    salaryInsights: {
+      currentMarketRate: string;
+      growthPotential: string;
+      recommendations: string[];
+    };
+    workLifeBalanceRecommendations: string[];
+    networkingOpportunities: string[];
+    personalizedAdvice: string[];
   } = {
     strengthsAnalysis: [],
     improvementAreas: [],
     careerPathSuggestions: [],
     skillGapAnalysis: [],
     marketTrends: [],
+    salaryInsights: {
+      currentMarketRate: "",
+      growthPotential: "",
+      recommendations: [],
+    },
+    workLifeBalanceRecommendations: [],
+    networkingOpportunities: [],
+    personalizedAdvice: [],
   };
 
   // Strengths analysis based on profile

@@ -125,6 +125,14 @@ export interface AICareerInsight {
     careerPathSuggestions: string[];
     skillGapAnalysis: string[];
     marketTrends: string[];
+    salaryInsights: {
+      currentMarketRate: string;
+      growthPotential: string;
+      recommendations: string[];
+    };
+    workLifeBalanceRecommendations: string[];
+    networkingOpportunities: string[];
+    personalizedAdvice: string[];
   };
   personalizedTips: CareerTip[];
   generatedAt: Date;

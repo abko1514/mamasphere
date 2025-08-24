@@ -1,37 +1,48 @@
-// api/career/profile/[userId]/route.ts
+//api/career/profile/[userId].ts;
 import type { NextApiRequest, NextApiResponse } from "next";
+import { careerService } from "@/lib/careerService";
 
-export async function updateCareerProfileHandler(
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== "PUT") {
-    return res.status(405).json({ message: "Method not allowed" });
+  const { userId } = req.query;
+
+  if (typeof userId !== "string") {
+    return res.status(400).json({ message: "Invalid user ID" });
   }
 
   try {
-    const { MongoClient } = await import("mongodb");
-    const client = new MongoClient(process.env.MONGODB_URI!);
-    await client.connect();
-    const db = client.db(); // Use your DB name if needed: client.db("yourDbName")
-    const { userId } = req.query;
-    const profileData = req.body;
-    const { ObjectId } = await import("mongodb");
-    const userObjectId = typeof userId === "string" ? new ObjectId(userId) : undefined;
+    switch (req.method) {
+      case "GET":
+        const profile = await careerService.getUserProfile(userId);
+        if (!profile) {
+          return res.status(404).json({ message: "Profile not found" });
+        }
+        return res.status(200).json(profile);
 
-    const result = await db
-      .collection("users")
-      .updateOne({ _id: userObjectId }, { $set: profileData }, { upsert: true });
+      case "PUT":
+        const updatedProfile = await careerService.updateUserProfile(
+          userId,
+          req.body
+        );
+        if (!updatedProfile) {
+          return res.status(500).json({ message: "Failed to update profile" });
+        }
 
-    if (result.modifiedCount === 0 && result.upsertedCount === 0) {
-      return res.status(404).json({ message: "User not found" });
+        // Track profile update activity
+        await careerService.trackUserActivity(userId, "profile_updated", {
+          fieldsUpdated: Object.keys(req.body),
+        });
+
+        return res.status(200).json(updatedProfile);
+
+      default:
+        res.setHeader("Allow", ["GET", "PUT"]);
+        return res.status(405).json({ message: "Method not allowed" });
     }
-
-    const updatedUser = await db.collection("users").findOne({ _id: userObjectId });
-
-    res.status(200).json(updatedUser);
   } catch (error) {
-    console.error("Error updating career profile:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error in user profile handler:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 }
