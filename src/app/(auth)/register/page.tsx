@@ -1,11 +1,11 @@
 "use client";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
-import icongoogle from "../../../../public/images/icon-google.svg";
+// import Image from "next/image";
+// import icongoogle from "../../../../public/images/icon-google.svg";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { signIn, useSession } from "next-auth/react";
+import {  useSession } from "next-auth/react";
 import Link from "next/link";
 import {  Eye, EyeOff, Heart } from "lucide-react";
 
@@ -242,22 +242,22 @@ function Register() {
                   </button>
                 </form>
 
-                <div className="my-6 flex items-center">
+                {/* <div className="my-6 flex items-center">
                   <div className="flex-grow border-t border-gray-200"></div>
                   <span className="mx-4 text-gray-500 text-sm">
                     Or continue with
                   </span>
                   <div className="flex-grow border-t border-gray-200"></div>
-                </div>
+                </div> */}
 
-                <button
+                {/* <button
                   className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors"
                   onClick={() => signIn("google")}
                   disabled={isLoading}
                 >
                   <Image src={icongoogle} alt="Google" width={20} height={20} />
                   Google
-                </button>
+                </button> */}
 
                 <p className="text-xs text-gray-500 text-center mt-6">
                   By creating an account, you agree to our{" "}
