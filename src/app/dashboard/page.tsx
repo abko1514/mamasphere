@@ -30,8 +30,6 @@ import {
   Baby,
   Award,
   Settings,
-  Bell,
-  Search,
   Filter,
   BarChart3,
   CheckCircle,

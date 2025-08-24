@@ -4,7 +4,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   MapPin,
-  Filter,
   List,
   Map as MapIcon,
   ShoppingBag,
