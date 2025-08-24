@@ -22,6 +22,7 @@ import {
 import LeafletMap from "../../components/childcare/LeafletMap";
 import PlaceCard from "../../components/childcare/PlaceCard";
 import FilterSidebar from "../../components/childcare/FilterSidebar";
+import Navbar from "../core component/Navbar";
 
 type ViewMode = "map" | "list" | "products" | "clothing";
 type PlaceTypeFilter =
@@ -249,421 +250,419 @@ const ChildcarePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-pink-500 to-purple-600 rounded-lg">
-                <Baby className="h-6 w-6 text-white" />
+    <div>
+      <Navbar />
+
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-pink-500 to-purple-600 rounded-lg">
+                  <Baby className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    MamaSphere Childcare
+                  </h1>
+                  
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  MamaSphere Childcare
-                </h1>
-                <p className="text-gray-600 text-sm">
-                  Real-time childcare data - no dummy content
-                </p>
+
+              {/* View Mode Toggles with real counts */}
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => handleViewModeChange("map")}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                    viewMode === "map"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  <MapIcon className="h-4 w-4" />
+                  Map
+                  <span className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">
+                    {filteredPlaces.length}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleViewModeChange("list")}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                    viewMode === "list"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  <List className="h-4 w-4" />
+                  List
+                  <span className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">
+                    {filteredPlaces.length}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleViewModeChange("products")}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                    viewMode === "products"
+                      ? "bg-white text-purple-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                  Toy Stores
+                  <span className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">
+                    {toystoreCount}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleViewModeChange("clothing")}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                    viewMode === "clothing"
+                      ? "bg-white text-pink-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  <Shirt className="h-4 w-4" />
+                  Clothing Stores
+                  <span className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">
+                    {clothingCount}
+                  </span>
+                </button>
               </div>
             </div>
 
-            {/* View Mode Toggles with real counts */}
-            <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => handleViewModeChange("map")}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                  viewMode === "map"
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                <MapIcon className="h-4 w-4" />
-                Map
-                <span className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">
-                  {filteredPlaces.length}
-                </span>
-              </button>
+            {/* Search and Filter Bar */}
+            {(viewMode === "map" || viewMode === "list") && (
+              <div className="flex items-center gap-4 mt-4">
+                <div className="flex-1 relative"></div>
 
-              <button
-                onClick={() => handleViewModeChange("list")}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                  viewMode === "list"
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                <List className="h-4 w-4" />
-                List
-                <span className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">
-                  {filteredPlaces.length}
-                </span>
-              </button>
+                <button
+                  onClick={refreshPlaces}
+                  disabled={refreshing}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+                  />
+                  {refreshing ? "Refreshing..." : "Refresh"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="max-w-7xl mx-auto px-4 py-2">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              {error}
               <button
-                onClick={() => handleViewModeChange("products")}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                  viewMode === "products"
-                    ? "bg-white text-purple-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
+                onClick={() => setError(null)}
+                className="ml-auto text-red-600 hover:text-red-800 font-medium"
               >
-                <ShoppingBag className="h-4 w-4" />
-                Toy Stores
-                <span className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">
-                  {toystoreCount}
-                </span>
-              </button>
-
-              <button
-                onClick={() => handleViewModeChange("clothing")}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                  viewMode === "clothing"
-                    ? "bg-white text-pink-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                <Shirt className="h-4 w-4" />
-                Clothing Stores
-                <span className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">
-                  {clothingCount}
-                </span>
+                ×
               </button>
             </div>
           </div>
+        )}
 
-          {/* Search and Filter Bar */}
-          {(viewMode === "map" || viewMode === "list") && (
-            <div className="flex items-center gap-4 mt-4">
-              <div className="flex-1 relative"></div>
-
-              <button
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                <Filter className="h-4 w-4" />
-                Filters
-              </button>
-
-              <button
-                onClick={refreshPlaces}
-                disabled={refreshing}
-                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex gap-6">
+            {/* Sidebar - Filters */}
+            {(viewMode === "map" || viewMode === "list") && (
+              <div className="hidden md:block w-80">
+                <FilterSidebar
+                  isOpen={true}
+                  onClose={() => setIsFilterOpen(false)}
+                  filters={filters}
+                  onFiltersChange={handleFiltersChange}
                 />
-                {refreshing ? "Refreshing..." : "Refresh"}
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+              </div>
+            )}
 
-      {/* Error Message */}
-      {error && (
-        <div className="max-w-7xl mx-auto px-4 py-2">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
-            {error}
-            <button
-              onClick={() => setError(null)}
-              className="ml-auto text-red-600 hover:text-red-800 font-medium"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex gap-6">
-          {/* Sidebar - Filters */}
-          {(viewMode === "map" || viewMode === "list") && (
-            <div className="hidden md:block w-80">
+            {/* Mobile Filter Sidebar */}
+            {(viewMode === "map" || viewMode === "list") && (
               <FilterSidebar
-                isOpen={true}
+                isOpen={isFilterOpen}
                 onClose={() => setIsFilterOpen(false)}
                 filters={filters}
                 onFiltersChange={handleFiltersChange}
               />
-            </div>
-          )}
+            )}
 
-          {/* Mobile Filter Sidebar */}
-          {(viewMode === "map" || viewMode === "list") && (
-            <FilterSidebar
-              isOpen={isFilterOpen}
-              onClose={() => setIsFilterOpen(false)}
-              filters={filters}
-              onFiltersChange={handleFiltersChange}
-            />
-          )}
+            {/* Main Content Area */}
+            <div className="flex-1">
+              {/* Stats Bar */}
+              <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-6 flex-wrap">
+                    {viewMode === "map" || viewMode === "list" ? (
+                      <>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-gray-900">
+                            {filteredPlaces.length}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Real Places Found
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-semibold text-green-600">
+                            {schoolCount}
+                          </div>
+                          <div className="text-xs text-gray-500">Schools</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-semibold text-orange-600">
+                            {nurseryCount}
+                          </div>
+                          <div className="text-xs text-gray-500">Nurseries</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-semibold text-pink-600">
+                            {playschoolCount}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Playschools
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-semibold text-purple-600">
+                            {toystoreCount}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Toy Stores
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-semibold text-blue-600">
+                            {clothingCount}
+                          </div>
+                          <div className="text-xs text-gray-500">Clothing</div>
+                        </div>
+                      </>
+                    ) : viewMode === "products" ? (
+                      <>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-purple-600">
+                            {toystoreCount}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Toy Stores Found
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-pink-600">
+                            {clothingCount}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Clothing Stores Found
+                          </div>
+                        </div>
+                      </>
+                    )}
 
-          {/* Main Content Area */}
-          <div className="flex-1">
-            {/* Stats Bar */}
-            <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-6 flex-wrap">
-                  {viewMode === "map" || viewMode === "list" ? (
-                    <>
+                    {userLocation && (
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900">
-                          {filteredPlaces.length}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Real Places Found
+                        <div className="text-sm text-gray-600 flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          Real-time OSM data
                         </div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-lg font-semibold text-green-600">
-                          {schoolCount}
-                        </div>
-                        <div className="text-xs text-gray-500">Schools</div>
+                    )}
+                  </div>
+
+                  {(loading || refreshing) && (
+                    <div className="flex items-center gap-2 text-blue-600">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">
+                        {refreshing ? "Refreshing..." : "Loading..."}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Content Based on View Mode */}
+              {viewMode === "map" && userLocation && (
+                <div className="space-y-6">
+                  <LeafletMap
+                    places={filteredPlaces}
+                    selectedPlace={selectedPlace}
+                    onPlaceSelect={setSelectedPlace}
+                    center={userLocation}
+                  />
+
+                  {/* Selected Place Details */}
+                  {selectedPlace && (
+                    <div className="bg-white rounded-lg shadow-sm p-4">
+                      <h3 className="font-semibold text-lg mb-4">
+                        Selected Place
+                      </h3>
+                      <PlaceCard
+                        place={selectedPlace}
+                        onClick={() => {}}
+                        isSelected={true}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {viewMode === "list" && (
+                <div className="space-y-4">
+                  {filteredPlaces.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="text-gray-400 mb-4">
+                        <GraduationCap className="h-16 w-16 mx-auto" />
                       </div>
-                      <div className="text-center">
-                        <div className="text-lg font-semibold text-orange-600">
-                          {nurseryCount}
-                        </div>
-                        <div className="text-xs text-gray-500">Nurseries</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-semibold text-pink-600">
-                          {playschoolCount}
-                        </div>
-                        <div className="text-xs text-gray-500">Playschools</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-semibold text-purple-600">
-                          {toystoreCount}
-                        </div>
-                        <div className="text-xs text-gray-500">Toy Stores</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-semibold text-blue-600">
-                          {clothingCount}
-                        </div>
-                        <div className="text-xs text-gray-500">Clothing</div>
-                      </div>
-                    </>
-                  ) : viewMode === "products" ? (
-                    <>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-purple-600">
-                          {toystoreCount}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Toy Stores Found
-                        </div>
-                      </div>
-                    </>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No real places found
+                      </h3>
+                      <p className="text-gray-600 mb-4">
+                        Try expanding your search radius or adjusting filters.
+                        We only show real places from OpenStreetMap.
+                      </p>
+                      <button
+                        onClick={refreshPlaces}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                      >
+                        Refresh Places
+                      </button>
+                    </div>
                   ) : (
-                    <>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-pink-600">
-                          {clothingCount}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Clothing Stores Found
-                        </div>
-                      </div>
-                    </>
+                    filteredPlaces.map((place) => (
+                      <PlaceCard
+                        key={place.id}
+                        place={place}
+                        onClick={() => setSelectedPlace(place)}
+                        isSelected={selectedPlace?.id === place.id}
+                      />
+                    ))
                   )}
+                </div>
+              )}
 
-                  {userLocation && (
-                    <div className="text-center">
-                      <div className="text-sm text-gray-600 flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        Real-time OSM data
+              {viewMode === "products" && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Toy Stores Near You
+                    </h2>
+                    <div className="text-sm text-gray-600">
+                      {toystoreCount} toy stores found
+                    </div>
+                  </div>
+
+                  {toystoreCount === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="text-gray-400 mb-4">
+                        <ShoppingBag className="h-16 w-16 mx-auto" />
                       </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No toy stores found
+                      </h3>
+                      <p className="text-gray-600 mb-4">
+                        No toy stores found in your area. Try expanding your
+                        search radius or refreshing.
+                      </p>
+                      <button
+                        onClick={refreshPlaces}
+                        className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                      >
+                        Refresh Search
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {places
+                        .filter((place) => place.placeType === "toystore")
+                        .map((store) => (
+                          <PlaceCard
+                            key={store.id}
+                            place={store}
+                            onClick={() => setSelectedPlace(store)}
+                            isSelected={selectedPlace?.id === store.id}
+                          />
+                        ))}
                     </div>
                   )}
                 </div>
+              )}
 
-                {(loading || refreshing) && (
-                  <div className="flex items-center gap-2 text-blue-600">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">
-                      {refreshing ? "Refreshing..." : "Loading..."}
-                    </span>
+              {viewMode === "clothing" && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Children&apos;s Clothing Stores Near You
+                    </h2>
+                    <div className="text-sm text-gray-600">
+                      {clothingCount} clothing stores found
+                    </div>
                   </div>
-                )}
-              </div>
+
+                  {clothingCount === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="text-gray-400 mb-4">
+                        <Shirt className="h-16 w-16 mx-auto" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No clothing stores found
+                      </h3>
+                      <p className="text-gray-600 mb-4">
+                        No children&apos;s clothing stores found in your area.
+                        Try expanding your search radius or refreshing.
+                      </p>
+                      <button
+                        onClick={refreshPlaces}
+                        className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+                      >
+                        Refresh Search
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {places
+                        .filter((place) => place.placeType === "clothing")
+                        .map((store) => (
+                          <PlaceCard
+                            key={store.id}
+                            place={store}
+                            onClick={() => setSelectedPlace(store)}
+                            isSelected={selectedPlace?.id === store.id}
+                          />
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-
-            {/* Content Based on View Mode */}
-            {viewMode === "map" && userLocation && (
-              <div className="space-y-6">
-                <LeafletMap
-                  places={filteredPlaces}
-                  selectedPlace={selectedPlace}
-                  onPlaceSelect={setSelectedPlace}
-                  center={userLocation}
-                />
-
-                {/* Selected Place Details */}
-                {selectedPlace && (
-                  <div className="bg-white rounded-lg shadow-sm p-4">
-                    <h3 className="font-semibold text-lg mb-4">
-                      Selected Place
-                    </h3>
-                    <PlaceCard
-                      place={selectedPlace}
-                      onClick={() => {}}
-                      isSelected={true}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {viewMode === "list" && (
-              <div className="space-y-4">
-                {filteredPlaces.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="text-gray-400 mb-4">
-                      <GraduationCap className="h-16 w-16 mx-auto" />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No real places found
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      Try expanding your search radius or adjusting filters. We
-                      only show real places from OpenStreetMap.
-                    </p>
-                    <button
-                      onClick={refreshPlaces}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                    >
-                      Refresh Places
-                    </button>
-                  </div>
-                ) : (
-                  filteredPlaces.map((place) => (
-                    <PlaceCard
-                      key={place.id}
-                      place={place}
-                      onClick={() => setSelectedPlace(place)}
-                      isSelected={selectedPlace?.id === place.id}
-                    />
-                  ))
-                )}
-              </div>
-            )}
-
-            {viewMode === "products" && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Toy Stores Near You
-                  </h2>
-                  <div className="text-sm text-gray-600">
-                    {toystoreCount} toy stores found
-                  </div>
-                </div>
-
-                {toystoreCount === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="text-gray-400 mb-4">
-                      <ShoppingBag className="h-16 w-16 mx-auto" />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No toy stores found
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      No toy stores found in your area. Try expanding your
-                      search radius or refreshing.
-                    </p>
-                    <button
-                      onClick={refreshPlaces}
-                      className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-                    >
-                      Refresh Search
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {places
-                      .filter((place) => place.placeType === "toystore")
-                      .map((store) => (
-                        <PlaceCard
-                          key={store.id}
-                          place={store}
-                          onClick={() => setSelectedPlace(store)}
-                          isSelected={selectedPlace?.id === store.id}
-                        />
-                      ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {viewMode === "clothing" && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Children&apos;s Clothing Stores Near You
-                  </h2>
-                  <div className="text-sm text-gray-600">
-                    {clothingCount} clothing stores found
-                  </div>
-                </div>
-
-                {clothingCount === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="text-gray-400 mb-4">
-                      <Shirt className="h-16 w-16 mx-auto" />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No clothing stores found
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      No children&apos;s clothing stores found in your area. Try
-                      expanding your search radius or refreshing.
-                    </p>
-                    <button
-                      onClick={refreshPlaces}
-                      className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
-                    >
-                      Refresh Search
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {places
-                      .filter((place) => place.placeType === "clothing")
-                      .map((store) => (
-                        <PlaceCard
-                          key={store.id}
-                          place={store}
-                          onClick={() => setSelectedPlace(store)}
-                          isSelected={selectedPlace?.id === store.id}
-                        />
-                      ))}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
-      </div>
 
-      {/* Quick Action Button */}
-      <div className="fixed bottom-6 right-6">
-        <button
-          onClick={() => userLocation && refreshPlaces()}
-          disabled={refreshing}
-          className="bg-gradient-to-r from-pink-500 to-purple-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50"
-          title="Refresh real data"
-        >
-          {refreshing ? (
-            <Loader2 className="h-6 w-6 animate-spin" />
-          ) : (
-            <Baby className="h-6 w-6" />
-          )}
-        </button>
+        {/* Quick Action Button */}
+        <div className="fixed bottom-6 right-6">
+          <button
+            onClick={() => userLocation && refreshPlaces()}
+            disabled={refreshing}
+            className="bg-gradient-to-r from-pink-500 to-purple-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-50"
+            title="Refresh real data"
+          >
+            {refreshing ? (
+              <Loader2 className="h-6 w-6 animate-spin" />
+            ) : (
+              <Baby className="h-6 w-6" />
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
