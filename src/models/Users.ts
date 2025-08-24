@@ -1,3 +1,4 @@
+// models/User.js (update existing)
 import mongoose from "mongoose";
 
 const { Schema } = mongoose;
@@ -58,6 +59,16 @@ const userSchema = new Schema(
     verificationTokenExpiry: {
       type: Date,
       required: false,
+    },
+    // Add reference to detailed profile
+    profileId: {
+      type: Schema.Types.ObjectId,
+      ref: "UserProfile",
+      required: false,
+    },
+    hasCompletedProfile: {
+      type: Boolean,
+      default: false,
     },
   },
   {

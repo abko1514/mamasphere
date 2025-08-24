@@ -3,8 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 //import Navbar from "@/app/core component/Navbar";
 import Script from "next/script";
-//import ClientLayout from "./ClientLayout";
-//import { CronBackgroundService } from "@/lib/services/cronBackgroundService";
+import ClientLayout from "./ClientLayout";
+import { CronBackgroundService } from "@/lib/services/cronBackgroundService";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -26,10 +26,10 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
-// Initialize cron on server startup
-//if (typeof window === "undefined") {
-//CronBackgroundService.ensureCronIsRunning().catch(console.error);
-//}
+//Initialize cron on server startup
+// if (typeof window === "undefined") {
+//   CronBackgroundService.ensureCronIsRunning().catch(console.error);
+// }
 
 export default async function RootLayout({
   children,
@@ -50,56 +50,31 @@ export default async function RootLayout({
           crossOrigin=""
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <main>
-          <AuthProvider session={session}>
-            <ToastContainer position="top-center" />
-            {children}
-          </AuthProvider>
-
-          {/* Leaflet JavaScript - Free Maps Library - NO EVENT HANDLERS */}
-          <Script
-            id="leaflet-js"
-            src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossOrigin=""
-            strategy="afterInteractive"
-          />
-
-          {/* Initialize Leaflet with logging - NO EVENT HANDLERS */}
-          <Script id="leaflet-init" strategy="afterInteractive">
-            {`
-              // Check if Leaflet loaded successfully
-              if (typeof window !== 'undefined') {
-                window.addEventListener('load', function() {
-                  if (window.L) {
-                    console.log('Leaflet maps library loaded successfully');
-                  } else {
-                    console.error('Error loading Leaflet maps library');
-                  }
-                });
-              }
-            `}
-          </Script>
-
-          {/* Register Service Worker */}
-          <Script id="register-sw" strategy="afterInteractive">
-            {`
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(function(registration) {
-                      console.log('SW registered: ', registration);
-                    }, function(registrationError) {
-                      console.log('SW registration failed: ', registrationError);
-                    });
-                });
-              }
-            `}
-          </Script>
-        </main>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ClientLayout>
+          <main>
+            <AuthProvider session={session}>
+              <ToastContainer position="top-center" />
+            
+              {children}
+            </AuthProvider>
+              {/* Register Service Worker */}
+              <Script id="register-sw" strategy="afterInteractive">
+                {`
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js')
+                      .then(function(registration) {
+                        console.log('SW registered: ', registration);
+                      }, function(registrationError) {
+                        console.log('SW registration failed: ', registrationError);
+                      });
+                  });
+                }
+              `}
+              </Script>
+          </main>
+        </ClientLayout>
       </body>
     </html>
   );
