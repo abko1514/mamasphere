@@ -1,7 +1,12 @@
 import MealPlanningMain from "@/components/meal-planning/MealPlanningMain";
-
+import Navbar from "@/app/core component/Navbar";
 export default function MealPage() {
-  return <MealPlanningMain />;
+  return (
+    <>
+      <Navbar />
+      <MealPlanningMain />
+    </>
+  );
 }
 
 export const metadata = {
