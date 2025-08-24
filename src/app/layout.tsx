@@ -3,8 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 import Navbar from "@/app/core component/Navbar";
 import Script from "next/script";
-//import ClientLayout from "./ClientLayout";
-//import { CronBackgroundService } from "@/lib/services/cronBackgroundService";
+import ClientLayout from "./ClientLayout";
+import { CronBackgroundService } from "@/lib/services/cronBackgroundService";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -26,10 +26,10 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
-// Initialize cron on server startup
-//if (typeof window === "undefined") {
-  //CronBackgroundService.ensureCronIsRunning().catch(console.error);
-//}
+//Initialize cron on server startup
+if (typeof window === "undefined") {
+  CronBackgroundService.ensureCronIsRunning().catch(console.error);
+}
 
 export default async function RootLayout({
   children,
@@ -43,30 +43,31 @@ export default async function RootLayout({
         <link rel="icon" href="/images/logo.png" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        
-        <main>
-          <AuthProvider session={session}>
-            <ToastContainer position="top-center" />
-          <Navbar />
-            {children}
-          </AuthProvider>
-            {/* Register Service Worker */}
-            <Script id="register-sw" strategy="afterInteractive">
-              {`
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(function(registration) {
-                      console.log('SW registered: ', registration);
-                    }, function(registrationError) {
-                      console.log('SW registration failed: ', registrationError);
-                    });
-                });
-              }
-            `}
-            </Script>
-        </main>
-        
+        <ClientLayout>
+          <main>
+            <AuthProvider session={session}>
+              <ToastContainer position="top-center" />
+             
+            <Navbar />
+              {children}
+            </AuthProvider>
+              {/* Register Service Worker */}
+              <Script id="register-sw" strategy="afterInteractive">
+                {`
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js')
+                      .then(function(registration) {
+                        console.log('SW registered: ', registration);
+                      }, function(registrationError) {
+                        console.log('SW registration failed: ', registrationError);
+                      });
+                  });
+                }
+              `}
+              </Script>
+          </main>
+        </ClientLayout>
       </body>
     </html>
   );
