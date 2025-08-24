@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import Navbar from "@/app/core component/Navbar";
+//import Navbar from "@/app/core component/Navbar";
 import Script from "next/script";
 import ClientLayout from "./ClientLayout";
 import { CronBackgroundService } from "@/lib/services/cronBackgroundService";
@@ -37,10 +37,18 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getServerSession();
+
   return (
     <html lang="en">
       <head>
         <link rel="icon" href="/images/logo.png" />
+        {/* Leaflet CSS - Free Maps Library */}
+        <link
+          rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossOrigin=""
+        />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ClientLayout>
