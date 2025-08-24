@@ -55,8 +55,7 @@ export default async function RootLayout({
           <main>
             <AuthProvider session={session}>
               <ToastContainer position="top-center" />
-             
-            <Navbar />
+            
               {children}
             </AuthProvider>
               {/* Register Service Worker */}
