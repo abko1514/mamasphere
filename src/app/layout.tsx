@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 
 // Initialize cron on server startup
 //if (typeof window === "undefined") {
-  //CronBackgroundService.ensureCronIsRunning().catch(console.error);
+//CronBackgroundService.ensureCronIsRunning().catch(console.error);
 //}
 
 export default async function RootLayout({
@@ -37,22 +37,57 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getServerSession();
+
   return (
     <html lang="en">
       <head>
         <link rel="icon" href="/images/logo.png" />
+        {/* Leaflet CSS - Free Maps Library */}
+        <link
+          rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossOrigin=""
+        />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
         <main>
           <AuthProvider session={session}>
             <ToastContainer position="top-center" />
-          <Navbar />
+            <Navbar />
             {children}
           </AuthProvider>
-            {/* Register Service Worker */}
-            <Script id="register-sw" strategy="afterInteractive">
-              {`
+
+          {/* Leaflet JavaScript - Free Maps Library - NO EVENT HANDLERS */}
+          <Script
+            id="leaflet-js"
+            src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossOrigin=""
+            strategy="afterInteractive"
+          />
+
+          {/* Initialize Leaflet with logging - NO EVENT HANDLERS */}
+          <Script id="leaflet-init" strategy="afterInteractive">
+            {`
+              // Check if Leaflet loaded successfully
+              if (typeof window !== 'undefined') {
+                window.addEventListener('load', function() {
+                  if (window.L) {
+                    console.log('Leaflet maps library loaded successfully');
+                  } else {
+                    console.error('Error loading Leaflet maps library');
+                  }
+                });
+              }
+            `}
+          </Script>
+
+          {/* Register Service Worker */}
+          <Script id="register-sw" strategy="afterInteractive">
+            {`
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js')
@@ -64,9 +99,8 @@ export default async function RootLayout({
                 });
               }
             `}
-            </Script>
+          </Script>
         </main>
-        
       </body>
     </html>
   );
