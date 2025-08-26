@@ -75,6 +75,13 @@ export interface FreelanceOpportunity {
   difficultyLevel: "beginner" | "intermediate" | "advanced" | "expert";
   clientRating: number;
   paymentVerified: boolean;
+  experienceLevel: "beginner" | "intermediate" | "advanced" | "expert";
+  budget: {
+    min: number;
+    max: number;
+    currency: string;
+  };
+  clientName: string;
 }
 
 export interface SmallBusiness {
@@ -126,8 +133,11 @@ export interface AICareerInsight {
     workLifeBalanceRecommendations: string[];
     networkingOpportunities: string[];
     personalizedAdvice: string[];
+    nextUpdateDue: string | Date;
+    improvementAreas: string[];
   };
   confidenceScore: number;
+  personalizedTips: string[];
   generatedAt: Date;
   lastUpdated: Date;
 }
@@ -619,6 +629,13 @@ class CareerService {
         difficultyLevel: "intermediate",
         clientRating: 4.8,
         paymentVerified: true,
+        experienceLevel: "intermediate",
+        budget: {
+          min: 5000,
+          max: 8000,
+          currency: "USD",
+        },
+        clientName: "LearnSmart Academy",
       },
       {
         _id: "freelance_2",
@@ -643,10 +660,18 @@ class CareerService {
         matchScore: 89,
         isRemote: true,
         timeZoneRequirement: "EST +/- 3 hours",
+        applicationDeadline: undefined,
         postedDate: new Date("2024-01-20"),
         difficultyLevel: "advanced",
         clientRating: 4.9,
         paymentVerified: true,
+        experienceLevel: "advanced",
+        budget: {
+          min: 85,
+          max: 120,
+          currency: "USD",
+        },
+        clientName: "GreenTech Solutions",
       },
       {
         _id: "freelance_3",
@@ -674,6 +699,13 @@ class CareerService {
         difficultyLevel: "intermediate",
         clientRating: 4.7,
         paymentVerified: true,
+        experienceLevel: "intermediate",
+        budget: {
+          min: 2500,
+          max: 3500,
+          currency: "USD",
+        },
+        clientName: "Modern Family Co.",
       },
     ];
   }
@@ -880,7 +912,18 @@ class CareerService {
           "Build thought leadership by sharing insights about marketing to working parent demographics",
           "Explore mentoring opportunities - your experience is valuable to other working mothers in marketing",
         ],
+        nextUpdateDue: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        improvementAreas: [
+          "Expand your technical marketing skills by learning basic data analytics.",
+          "Practice executive-level presentations to boost boardroom confidence.",
+          "Seek mentorship from senior leaders in your target industry.",
+        ],
       },
+      personalizedTips: [
+        "Schedule regular networking sessions with other working mothers in your field.",
+        "Update your LinkedIn profile to highlight your unique strengths as a parent.",
+        "Consider taking a short online course in marketing automation.",
+      ],
       confidenceScore: 87,
       generatedAt: new Date(),
       lastUpdated: new Date(),

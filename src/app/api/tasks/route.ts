@@ -1,4 +1,3 @@
-// app/api/tasks/route.ts - Enhanced debugging version
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/dbConnect";
 import mongoose from "mongoose";
@@ -59,7 +58,7 @@ export async function GET(request: Request): Promise<Response> {
 
     console.log("Fetching tasks for user:", session.user.email);
 
-    const filter: any = { userId: session.user.email };
+    const filter: Record<string, unknown> = { userId: session.user.email };
     if (completed !== null) {
       filter.completed = completed === "true";
     }
@@ -135,9 +134,9 @@ export async function POST(request: Request): Promise<Response> {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
-    let finalPriority = taskData.priority || 3;
-    let finalCategory = taskData.category || "general";
-    let aiProcessed = false;
+    const finalPriority = taskData.priority || 3;
+    const finalCategory = taskData.category || "general";
+    const aiProcessed = false;
 
     // Skip AI services for now to isolate the issue
     console.log(

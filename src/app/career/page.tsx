@@ -1,34 +1,22 @@
-// app/career/page.tsx
 "use client";
-import React, { useState, useEffect } from "react";
-import { GetServerSideProps } from "next";
+import React, { useState, useEffect, useCallback } from "react";
 import { getSession } from "next-auth/react";
 import Head from "next/head";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Briefcase,
   TrendingUp,
-  Users,
   Target,
   Star,
-  MapPin,
-  Clock,
-  DollarSign,
-  ExternalLink,
-  Filter,
-  BookOpen,
   Lightbulb,
   Heart,
   Building2,
   Zap,
   ArrowRight,
-  Play,
   CheckCircle,
   Award,
   Globe,
   Sparkles,
-  User,
-  Settings,
 } from "lucide-react";
 import { careerService, JobRecommendation } from "@/lib/careerService";
 import {
@@ -58,11 +46,11 @@ export default function CareerSupportPage() {
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab") || "overview";
 
-  const [activeTab, setActiveTab] = useState<string>(tab as string);
+  const [activeTab, setActiveTab] = useState<string>(tab);
   const [loading, setLoading] = useState(false);
   const [tips, setTips] = useState<CareerTip[]>([]);
   const [jobs, setJobs] = useState<JobRecommendation[]>([]);
-  const [freelanceOps, setFreelanceOps] = useState<FreelanceOpportunity[]>([]);
+  const [freelanceOps] = useState<FreelanceOpportunity[]>([]);
   const [businesses, setBusinesses] = useState<SmallBusiness[]>([]);
   const [aiInsights, setAiInsights] = useState<AICareerInsight | null>(null);
   const [stats, setStats] = useState({
@@ -89,11 +77,14 @@ export default function CareerSupportPage() {
   });
 
   // Function to handle tab changes
-  function handleTabChange(tabId: string): void {
-    const params = new URLSearchParams(Array.from(searchParams.entries()));
-    params.set("tab", tabId);
-    router.push(`?${params.toString()}`);
-  }
+  const handleTabChange = useCallback(
+    (tabId: string): void => {
+      const params = new URLSearchParams(Array.from(searchParams.entries()));
+      params.set("tab", tabId);
+      router.push(`?${params.toString()}`);
+    },
+    [router, searchParams]
+  );
 
   // Function to generate AI insights
   const generateAIInsights = async () => {
@@ -108,7 +99,18 @@ export default function CareerSupportPage() {
         userId: insights.userId,
         generatedAt: insights.generatedAt,
         nextUpdateDue: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 7 days from now
-        personalizedTips: insights.personalizedTips ?? [],
+        personalizedTips: (insights.personalizedTips ?? []).map((tip: string, index: number) => ({
+          _id: `ai-tip-${index}`,
+          title: `AI Tip ${index + 1}`,
+          content: tip,
+          category: "career_growth",
+          targetAudience: [],
+          aiGenerated: true,
+          isPersonalized: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          tags: [],
+        })),
         insights: {
           strengthsAnalysis: insights.insights.strengthsAnalysis ?? [],
           improvementAreas: insights.insights.improvementAreas ?? [],
@@ -125,6 +127,9 @@ export default function CareerSupportPage() {
           networkingOpportunities:
             insights.insights.networkingOpportunities ?? [],
           personalizedAdvice: insights.insights.personalizedAdvice ?? [],
+          nextUpdateDue: insights.insights.nextUpdateDue
+            ? new Date(insights.insights.nextUpdateDue)
+            : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
       });
     } catch (error) {
@@ -134,9 +139,88 @@ export default function CareerSupportPage() {
     }
   };
 
+  const loadInitialData = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const [tipsData, jobsData, businessData] = await Promise.all([
+        careerService.getPersonalizedTips(user.id),
+        careerService.getJobRecommendations(user.id),
+        careerService.getSmallBusinesses(),
+      ]);
+
+      setTips(
+        tipsData.map((tip: any) => ({
+          ...tip,
+          targetAudience: tip.targetAudience ?? "",
+          aiGenerated: tip.aiGenerated ?? false,
+        }))
+      );
+      setJobs(jobsData);
+      setBusinesses(
+        businessData.map((biz: any) => ({
+          _id: biz._id,
+          businessName: biz.businessName ?? "",
+          ownerName: biz.ownerName ?? "",
+          ownerId: biz.ownerId ?? "",
+          category: biz.category ?? "",
+          description: biz.description ?? "",
+          location: biz.location ?? "",
+          website: biz.website ?? "",
+          momOwned: biz.momOwned ?? false,
+          createdAt: biz.createdAt ? new Date(biz.createdAt) : new Date(),
+          updatedAt: biz.updatedAt ? new Date(biz.updatedAt) : new Date(),
+          services: biz.services ?? [],
+          contactInfo: biz.contactInfo ?? { email: "", phone: "", address: "" },
+          images: biz.images ?? [],
+          isVerified: biz.isVerified ?? false,
+          rating: biz.rating ?? 0,
+          reviews: biz.reviews ?? [],
+          tags: biz.tags ?? [],
+          featured: biz.featured ?? false,
+          reviewCount: biz.reviewCount ?? (Array.isArray(biz.reviews) ? biz.reviews.length : 0),
+          isMomOwned: biz.isMomOwned ?? biz.momOwned ?? false,
+        }))
+      );
+    } catch (error) {
+      console.error("Error loading career data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const calculateStats = useCallback(() => {
+    // Calculate profile completion percentage
+    if (!user) return;
+    const profile = user.profile;
+    if (profile) {
+      let completionScore = 0;
+      const fields = [
+        "name",
+        "email",
+        "location",
+        "currentRole",
+        "industry",
+        "yearsOfExperience",
+        "skillsAndExperience",
+        "workPreference",
+      ];
+
+      fields.forEach((field) => {
+        if (profile[field as keyof UserProfile]) completionScore += 12.5;
+      });
+
+      setStats((prev) => ({
+        ...prev,
+        profileCompletion: Math.round(completionScore),
+        totalJobs: jobs.length,
+      }));
+    }
+  }, [user, jobs.length]);
+
   useEffect(() => {
     if (tab !== activeTab) {
-      setActiveTab(tab as string);
+      setActiveTab(tab);
     }
   }, [tab, activeTab]);
 
@@ -185,9 +269,9 @@ export default function CareerSupportPage() {
           updatedAt: new Date(),
           resumeUrl: "",
           avatar: "",
-          profileVisibility: "public", // or "private" depending on your app logic
-          showContactInfo: true, // or false depending on your app logic
-          allowMessages: true, // or false depending on your app logic
+          profileVisibility: "public",
+          showContactInfo: true,
+          allowMessages: true,
         };
         setUser({
           id: session.user?.email || "user_123",
@@ -197,6 +281,7 @@ export default function CareerSupportPage() {
         });
       } catch (error) {
         setUser(null);
+        console.error("Error fetching user session:", error);
       } finally {
         setLoading(false);
       }
@@ -210,56 +295,7 @@ export default function CareerSupportPage() {
       loadInitialData();
       calculateStats();
     }
-  }, [user?.id]);
-
-  const loadInitialData = async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const [tipsData, jobsData, businessData] = await Promise.all([
-        careerService.getPersonalizedTips(user.id),
-        careerService.getJobRecommendations(user.id),
-        careerService.getSmallBusinesses(),
-      ]);
-
-      setTips(tipsData);
-      setJobs(jobsData);
-      setBusinesses(businessData);
-    } catch (error) {
-      console.error("Error loading career data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const calculateStats = () => {
-    // Calculate profile completion percentage
-    if (!user) return;
-    const profile = user.profile;
-    if (profile) {
-      let completionScore = 0;
-      const fields = [
-        "name",
-        "email",
-        "location",
-        "currentRole",
-        "industry",
-        "yearsOfExperience",
-        "skillsAndExperience",
-        "workPreference",
-      ];
-
-      fields.forEach((field) => {
-        if (profile[field as keyof UserProfile]) completionScore += 12.5;
-      });
-
-      setStats((prev) => ({
-        ...prev,
-        profileCompletion: Math.round(completionScore),
-        totalJobs: jobs.length,
-      }));
-    }
-  };
+  }, [user?.id, loadInitialData, calculateStats]);
 
   // TabButton component for tab navigation
   const TabButton = ({
@@ -270,7 +306,7 @@ export default function CareerSupportPage() {
   }: {
     tabId: string;
     label: string;
-    icon: any;
+    icon: React.ComponentType<{ size?: number | string }>;
     count?: number;
   }) => (
     <button
@@ -398,13 +434,6 @@ export default function CareerSupportPage() {
                   </div>
                 </div>
 
-                {/* <button
-                  onClick={() => router.push("/profile")}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  <Settings size={16} />
-                  Profile
-                </button> */}
                 <ProfileButton />
               </div>
             </div>
@@ -452,7 +481,7 @@ export default function CareerSupportPage() {
                   Welcome back, {user.name}! 👋
                 </h2>
                 <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                  Let's advance your career while maintaining the work-life
+                  Let&apos;s advance your career while maintaining the work-life
                   balance that matters to you.
                 </p>
               </div>
@@ -785,7 +814,33 @@ export default function CareerSupportPage() {
 
           {activeTab === "jobs" && (
             <JobsSection
-              jobs={jobs}
+              jobs={jobs.map((job: any) => ({
+                _id: job._id,
+                title: job.title ?? "",
+                company: job.company ?? "",
+                location: job.location ?? "",
+                workArrangement: job.workArrangement ?? "",
+                salary: job.salary ?? "",
+                matchScore: job.matchScore ?? 0,
+                isMaternityFriendly: job.isMaternityFriendly ?? false,
+                postedAt: job.postedAt ? new Date(job.postedAt) : new Date(),
+                postedDate: job.postedDate ? new Date(job.postedDate) : (job.postedAt ? new Date(job.postedAt) : new Date()),
+                description: job.description ?? "",
+                type: job.type ?? "",
+                requirements: job.requirements ?? [],
+                benefits: job.benefits ?? [],
+                flexibleHours: job.flexibleHours ?? false,
+                applicationUrl: job.applicationUrl ?? "",
+                saved: job.saved ?? false,
+                applied: job.applied ?? false,
+                tags: job.tags ?? [],
+                industry: job.industry ?? "",
+                experienceLevel: job.experienceLevel ?? "",
+                isRemote: job.isRemote ?? false,
+                companyLogo: job.companyLogo ?? "",
+                isPersonalized: job.isPersonalized ?? false,
+                reasonsForMatch: job.reasonsForMatch ?? [],
+              }))}
               loading={loading}
               filters={jobFilters}
               setFilters={setJobFilters}
@@ -809,7 +864,6 @@ export default function CareerSupportPage() {
               filters={businessFilters}
               setFilters={setBusinessFilters}
               onApplyFilters={loadInitialData}
-              userId={user.id}
             />
           )}
         </div>
@@ -817,553 +871,3 @@ export default function CareerSupportPage() {
     </>
   );
 }
-
-// components/CareerProfileDashboard.tsx
-// "use client"
-// import React, { useState } from 'react';
-// import {
-//   User,
-//   Edit3,
-//   BarChart3,
-//   Briefcase,
-//   MapPin,
-//   Calendar,
-//   Award,
-//   Target,
-//   TrendingUp,
-//   AlertCircle,
-//   CheckCircle,
-//   Plus,
-//   Settings,
-//   Heart,
-//   Baby,
-//   Clock,
-//   Globe,
-// } from 'lucide-react';
-// import { useCareerProfile } from '@/lib/hooks/useCareerProfile';
-
-// const CareerProfileDashboard = () => {
-//   const {
-//     profile,
-//     stats,
-//     loading,
-//     error,
-//     hasProfile,
-//     completionPercentage,
-//     refreshProfile,
-//   } = useCareerProfile();
-
-//   const [showEditForm, setShowEditForm] = useState(false);
-
-//   if (loading) {
-//     return (
-//       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 flex items-center justify-center">
-//         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
-//       </div>
-//     );
-//   }
-
-//   if (error) {
-//     return (
-//       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 flex items-center justify-center">
-//         <div className="text-center max-w-md">
-//           <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
-//           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-//             Error Loading Profile
-//           </h2>
-//           <p className="text-gray-600 mb-4">{error}</p>
-//           <button
-//             onClick={refreshProfile}
-//             className="bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors"
-//           >
-//             Try Again
-//           </button>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   if (!hasProfile) {
-//     return (
-//       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50">
-//         <div className="max-w-4xl mx-auto px-4 py-16">
-//           <div className="text-center">
-//             <div className="w-24 h-24 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
-//               <User className="text-white" size={40} />
-//             </div>
-//             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-//               Complete Your Career Profile
-//             </h1>
-//             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-//               Help us provide personalized career guidance, job recommendations,
-//               and opportunities tailored specifically for working mothers.
-//             </p>
-//             <button
-//               onClick={() => setShowEditForm(true)}
-//               className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-4 rounded-2xl text-lg font-semibold hover:shadow-xl transition-all transform hover:-translate-y-1 inline-flex items-center gap-3"
-//             >
-//               <Plus size={24} />
-//               Create My Profile
-//             </button>
-//           </div>
-
-//           <div className="grid md:grid-cols-3 gap-8 mt-16">
-//             <div className="text-center">
-//               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-//                 <Target className="text-purple-600" size={24} />
-//               </div>
-//               <h3 className="font-semibold text-gray-900 mb-2">
-//                 Personalized Recommendations
-//               </h3>
-//               <p className="text-gray-600">
-//                 Get AI-powered job matches and career advice based on your
-//                 unique situation
-//               </p>
-//             </div>
-
-//             <div className="text-center">
-//               <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
-//                 <Briefcase className="text-pink-600" size={24} />
-//               </div>
-//               <h3 className="font-semibold text-gray-900 mb-2">
-//                 Career Opportunities
-//               </h3>
-//               <p className="text-gray-600">
-//                 Discover family-friendly jobs, freelance work, and small
-//                 businesses
-//               </p>
-//             </div>
-
-//             <div className="text-center">
-//               <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-//                 <TrendingUp className="text-indigo-600" size={24} />
-//               </div>
-//               <h3 className="font-semibold text-gray-900 mb-2">
-//                 Growth Tracking
-//               </h3>
-//               <p className="text-gray-600">
-//                 Monitor your career progress and get insights for professional
-//                 development
-//               </p>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   const formatDate = (date: string | Date) => {
-//     return new Date(date).toLocaleDateString("en-US", {
-//       year: "numeric",
-//       month: "long",
-//       day: "numeric",
-//     });
-//   };
-
-//   const getAvailabilityStatusInfo = (status: string) => {
-//     switch (status) {
-//       case "maternity_leave":
-//         return {
-//           label: "On Maternity Leave",
-//           icon: Baby,
-//           color: "bg-pink-100 text-pink-700",
-//         };
-//       case "returning_to_work":
-//         return {
-//           label: "Returning to Work",
-//           icon: Clock,
-//           color: "bg-blue-100 text-blue-700",
-//         };
-//       case "actively_working":
-//         return {
-//           label: "Actively Working",
-//           icon: Briefcase,
-//           color: "bg-green-100 text-green-700",
-//         };
-//       case "seeking_opportunities":
-//         return {
-//           label: "Seeking Opportunities",
-//           icon: Target,
-//           color: "bg-yellow-100 text-yellow-700",
-//         };
-//       case "career_break":
-//         return {
-//           label: "Career Break",
-//           icon: Heart,
-//           color: "bg-purple-100 text-purple-700",
-//         };
-//       default:
-//         return {
-//           label: status,
-//           icon: User,
-//           color: "bg-gray-100 text-gray-700",
-//         };
-//     }
-//   };
-
-//   const statusInfo = getAvailabilityStatusInfo(
-//     profile?.availabilityStatus || ""
-//   );
-//   const StatusIcon = statusInfo.icon;
-
-//   return (
-//     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50">
-//       <div className="max-w-7xl mx-auto px-4 py-8">
-//         {/* Header */}
-//         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-8">
-//           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-//             <div className="flex items-center gap-6 mb-6 md:mb-0">
-//               <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-//                 <span className="text-white text-2xl font-bold">
-//                   {profile?.name?.charAt(0)?.toUpperCase() || "U"}
-//                 </span>
-//               </div>
-//               <div>
-//                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
-//                   {profile?.name}
-//                 </h1>
-//                 <div className="flex flex-wrap items-center gap-4 text-gray-600">
-//                   {profile?.currentRole && (
-//                     <span className="flex items-center gap-1">
-//                       <Briefcase size={16} />
-//                       {profile.currentRole}
-//                       {profile?.company && ` at ${profile.company}`}
-//                     </span>
-//                   )}
-//                   {profile?.location && (
-//                     <span className="flex items-center gap-1">
-//                       <MapPin size={16} />
-//                       {profile.location}
-//                     </span>
-//                   )}
-//                   <span className="flex items-center gap-1">
-//                     <Calendar size={16} />
-//                     {profile?.yearsOfExperience} years experience
-//                   </span>
-//                 </div>
-//                 <div className="mt-2">
-//                   <span
-//                     className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${statusInfo.color}`}
-//                   >
-//                     <StatusIcon size={14} />
-//                     {statusInfo.label}
-//                   </span>
-//                 </div>
-//               </div>
-//             </div>
-
-//             <div className="flex flex-col sm:flex-row gap-3">
-//               <button
-//                 onClick={() => setShowEditForm(true)}
-//                 className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-//               >
-//                 <Edit3 size={16} />
-//                 Edit Profile
-//               </button>
-//               <button className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all font-medium">
-//                 <BarChart3 size={16} />
-//                 View Analytics
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Profile Completion Alert */}
-//         {completionPercentage < 80 && (
-//           <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-6 mb-8">
-//             <div className="flex items-start gap-4">
-//               <AlertCircle
-//                 className="text-yellow-600 flex-shrink-0"
-//                 size={24}
-//               />
-//               <div className="flex-1">
-//                 <h3 className="font-semibold text-yellow-900 mb-2">
-//                   Complete Your Profile ({completionPercentage}%)
-//                 </h3>
-//                 <p className="text-yellow-800 mb-4">
-//                   A complete profile helps us provide better job matches and
-//                   career recommendations.
-//                 </p>
-//                 <button
-//                   onClick={() => setShowEditForm(true)}
-//                   className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors font-medium"
-//                 >
-//                   Complete Now
-//                 </button>
-//               </div>
-//               <div className="flex-shrink-0">
-//                 <div className="w-16 h-16 relative">
-//                   <svg
-//                     className="w-16 h-16 transform -rotate-90"
-//                     viewBox="0 0 36 36"
-//                   >
-//                     <path
-//                       className="text-gray-200"
-//                       stroke="currentColor"
-//                       strokeWidth="2"
-//                       fill="none"
-//                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-//                     />
-//                     <path
-//                       className="text-yellow-500"
-//                       stroke="currentColor"
-//                       strokeWidth="2"
-//                       strokeDasharray={`${completionPercentage}, 100`}
-//                       strokeLinecap="round"
-//                       fill="none"
-//                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-//                     />
-//                   </svg>
-//                   <div className="absolute inset-0 flex items-center justify-center">
-//                     <span className="text-sm font-semibold text-yellow-700">
-//                       {completionPercentage}%
-//                     </span>
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-//         )}
-
-//         {/* Stats Grid */}
-//         {stats && (
-//           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-//             <div className="bg-white rounded-xl p-6 text-center border border-gray-100">
-//               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-//                 <Briefcase className="text-purple-600" size={24} />
-//               </div>
-//               <div className="text-2xl font-bold text-gray-900">
-//                 {stats.availableJobs}
-//               </div>
-//               <div className="text-sm text-gray-600">Available Jobs</div>
-//             </div>
-
-//             <div className="bg-white rounded-xl p-6 text-center border border-gray-100">
-//               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-//                 <Heart className="text-green-600" size={24} />
-//               </div>
-//               <div className="text-2xl font-bold text-gray-900">
-//                 {stats.savedJobs}
-//               </div>
-//               <div className="text-sm text-gray-600">Saved Jobs</div>
-//             </div>
-
-//             <div className="bg-white rounded-xl p-6 text-center border border-gray-100">
-//               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-//                 <Target className="text-blue-600" size={24} />
-//               </div>
-//               <div className="text-2xl font-bold text-gray-900">
-//                 {stats.applications}
-//               </div>
-//               <div className="text-sm text-gray-600">Applications</div>
-//             </div>
-
-//             <div className="bg-white rounded-xl p-6 text-center border border-gray-100">
-//               <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-//                 <Award className="text-yellow-600" size={24} />
-//               </div>
-//               <div className="text-2xl font-bold text-gray-900">
-//                 {stats.profileCompletion}%
-//               </div>
-//               <div className="text-sm text-gray-600">Profile Complete</div>
-//             </div>
-//           </div>
-//         )}
-
-//         {/* Main Content Grid */}
-//         <div className="grid lg:grid-cols-3 gap-8">
-//           {/* Left Column - Profile Info */}
-//           <div className="lg:col-span-2 space-y-6">
-//             {/* About */}
-//             {profile?.bio && (
-//               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-//                 <h3 className="text-lg font-semibold text-gray-900 mb-3">
-//                   About
-//                 </h3>
-//                 <p className="text-gray-600 leading-relaxed">{profile.bio}</p>
-//               </div>
-//             )}
-
-//             {/* Skills & Experience */}
-//             {profile?.skillsAndExperience &&
-//               profile.skillsAndExperience.length > 0 && (
-//                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-//                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-//                     Skills & Expertise
-//                   </h3>
-//                   <div className="flex flex-wrap gap-2">
-//                     {profile.skillsAndExperience.map(
-//                       (skill: string, index: number) => (
-//                         <span
-//                           key={index}
-//                           className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium"
-//                         >
-//                           {skill}
-//                         </span>
-//                       )
-//                     )}
-//                   </div>
-//                 </div>
-//               )}
-
-//             {/* Work Experience */}
-//             {profile?.workExperience && profile.workExperience.length > 0 && (
-//               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-//                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-//                   Work Experience
-//                 </h3>
-//                 <div className="space-y-4">
-//                   {profile.workExperience.map((exp: any) => (
-//                     <div
-//                       key={exp.id}
-//                       className="border-l-4 border-purple-200 pl-4"
-//                     >
-//                       <div className="flex justify-between items-start mb-1">
-//                         <h4 className="font-semibold text-gray-900">
-//                           {exp.position}
-//                         </h4>
-//                         <span className="text-sm text-gray-500">
-//                           {formatDate(exp.startDate)} -{" "}
-//                           {exp.isCurrent ? "Present" : formatDate(exp.endDate)}
-//                         </span>
-//                       </div>
-//                       <p className="text-purple-600 font-medium mb-2">
-//                         {exp.company}
-//                       </p>
-//                       {exp.description && (
-//                         <p className="text-gray-600 text-sm">
-//                           {exp.description}
-//                         </p>
-//                       )}
-//                     </div>
-//                   ))}
-//                 </div>
-//               </div>
-//             )}
-
-//             {/* Career Goals */}
-//             {profile?.careerGoals && (
-//               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-//                 <h3 className="text-lg font-semibold text-gray-900 mb-3">
-//                   Career Goals
-//                 </h3>
-//                 <p className="text-gray-600 leading-relaxed">
-//                   {profile.careerGoals}
-//                 </p>
-//               </div>
-//             )}
-//           </div>
-
-//           {/* Right Column - Side Info */}
-//           <div className="space-y-6">
-//             {/* Quick Info */}
-//             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-//               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-//                 Profile Details
-//               </h3>
-//               <div className="space-y-3">
-//                 <div className="flex justify-between">
-//                   <span className="text-gray-600">Industry</span>
-//                   <span className="font-medium">{profile?.industry}</span>
-//                 </div>
-//                 <div className="flex justify-between">
-//                   <span className="text-gray-600">Work Preference</span>
-//                   <span className="font-medium capitalize">
-//                     {profile?.workPreference}
-//                   </span>
-//                 </div>
-//                 <div className="flex justify-between">
-//                   <span className="text-gray-600">Education</span>
-//                   <span className="font-medium capitalize">
-//                     {profile?.educationLevel?.replace("_", " ")}
-//                   </span>
-//                 </div>
-//                 {profile?.isPregnant && (
-//                   <div className="flex justify-between">
-//                     <span className="text-gray-600">Due Date</span>
-//                     <span className="font-medium">
-//                       {formatDate(profile.dueDate)}
-//                     </span>
-//                   </div>
-//                 )}
-//                 {profile?.childrenAges && profile.childrenAges.length > 0 && (
-//                   <div className="flex justify-between">
-//                     <span className="text-gray-600">Children</span>
-//                     <span className="font-medium">
-//                       {profile.childrenAges.length} child
-//                       {profile.childrenAges.length !== 1 ? "ren" : ""}
-//                     </span>
-//                   </div>
-//                 )}
-//               </div>
-//             </div>
-
-//             {/* Flexibility Needs */}
-//             {profile?.flexibilityNeeds &&
-//               profile.flexibilityNeeds.length > 0 && (
-//                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-//                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-//                     Flexibility Needs
-//                   </h3>
-//                   <div className="space-y-2">
-//                     {profile.flexibilityNeeds.map(
-//                       (need: string, index: number) => (
-//                         <div key={index} className="flex items-center gap-2">
-//                           <CheckCircle size={14} className="text-green-500" />
-//                           <span className="text-sm text-gray-700">{need}</span>
-//                         </div>
-//                       )
-//                     )}
-//                   </div>
-//                 </div>
-//               )}
-
-//             {/* Salary Range */}
-//             {profile?.desiredSalaryRange && (
-//               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-//                 <h3 className="text-lg font-semibold text-gray-900 mb-3">
-//                   Salary Expectations
-//                 </h3>
-//                 <div className="text-center">
-//                   <div className="text-2xl font-bold text-gray-900">
-//                     {profile.desiredSalaryRange.currency}{" "}
-//                     {profile.desiredSalaryRange.min.toLocaleString()} -{" "}
-//                     {profile.desiredSalaryRange.max.toLocaleString()}
-//                   </div>
-//                   <div className="text-sm text-gray-600">
-//                     Annual salary range
-//                   </div>
-//                 </div>
-//               </div>
-//             )}
-
-//             {/* Certifications */}
-//             {profile?.certifications && profile.certifications.length > 0 && (
-//               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-//                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-//                   Certifications
-//                 </h3>
-//                 <div className="space-y-3">
-//                   {profile.certifications.map((cert: any) => (
-//                     <div
-//                       key={cert.id}
-//                       className="border-l-2 border-purple-200 pl-3"
-//                     >
-//                       <h4 className="font-medium text-gray-900">{cert.name}</h4>
-//                       <p className="text-sm text-purple-600">{cert.issuer}</p>
-//                       <p className="text-xs text-gray-500">
-//                         {formatDate(cert.issueDate)}
-//                       </p>
-//                     </div>
-//                   ))}
-//                 </div>
-//               </div>
-//             )}
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default CareerProfileDashboard;

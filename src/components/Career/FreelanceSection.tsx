@@ -44,18 +44,25 @@ export function FreelanceSection({
         filters
       );
       // Map the data to ensure it matches the expected FreelanceOpportunity shape
-      const mappedData = data.map((item: any) => ({
+      const mappedData = data.map((item) => ({
         _id: item._id,
         clientName: item.clientName,
         projectType: item.projectType,
-        budget: item.budget,
+        budget: {
+          min: item.budget?.min ?? 0,
+          max: item.budget?.max ?? 0,
+          currency: item.budget?.currency ?? "USD",
+          type: item.budget?.type ?? "fixed", // Ensure 'type' is present
+        },
         experienceLevel: item.experienceLevel,
         duration: item.duration,
         isRemote: item.isRemote,
         description: item.description,
         skillsRequired: item.skillsRequired,
-        applicationDeadline: item.applicationDeadline,
-        postedDate: item.postedDate,
+        applicationDeadline: item.applicationDeadline
+          ? new Date(item.applicationDeadline)
+          : new Date(), // fallback to current date if missing
+        postedDate: new Date(item.postedDate),
         title: item.title ?? "", // Provide a default if missing
         matchScore: item.matchScore ?? 0, // Provide a default if missing
       }));
@@ -84,11 +91,11 @@ export function FreelanceSection({
     }
   };
 
-  const getMatchScoreColor = (score: number) => {
-    if (score >= 80) return "text-green-600 bg-green-100";
-    if (score >= 60) return "text-yellow-600 bg-yellow-100";
-    return "text-orange-600 bg-orange-100";
-  };
+  // const getMatchScoreColor = (score: number) => {
+  //   if (score >= 80) return "text-green-600 bg-green-100";
+  //   if (score >= 60) return "text-yellow-600 bg-yellow-100";
+  //   return "text-orange-600 bg-orange-100";
+  // };
 
   if (loading) {
     return (

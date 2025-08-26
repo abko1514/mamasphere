@@ -1,8 +1,8 @@
-// ===== 4. Fix api/notifications/subscribe/route.ts =====
 import { NextResponse } from "next/server";
 import { ReminderService } from "@/lib/services/reminderService";
-import clientPromise from "@/lib/mongodb";
+import { dbConnect } from "@/lib/dbConnect";
 import { ObjectId } from "mongodb";
+import { MongoClient } from "mongodb";
 
 interface SubscribeRequest {
   userId: string;
@@ -31,7 +31,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       );
     }
 
-    const client = await clientPromise;
+    await dbConnect();
+    const client = new MongoClient(process.env.MONGODB_URI!);
+    await client.connect();
     const db = client.db("mamasphere");
 
     // Create ObjectId from userId string
@@ -42,13 +44,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       // If userId is not a valid ObjectId, use it as a string
       userObjectId = new ObjectId();
     }
-
-    // Use userObjectId to satisfy the linter (though we use userId string below)
-    console.log("Processing subscription for ObjectId:", userObjectId);
-
+    console.log("User ObjectId:", userObjectId);
     // Update or create user notification preferences
     await db.collection("users").updateOne(
-      { userId: userId }, // Use userId as string field instead of _id
+      { userId: userId },
       {
         $set: {
           email,
@@ -77,8 +76,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (overdueReminders) {
       await ReminderService.scheduleOverdueCheck(userId);
     }
-
-    console.log("Email notifications setup successfully for:", email);
 
     return NextResponse.json({
       message: "Notification preferences updated successfully",

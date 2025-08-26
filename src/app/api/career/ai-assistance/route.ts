@@ -2,6 +2,12 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { dbConnect } from "@/lib/dbConnect";
 import { AICareerInsight, UserProfile } from "@/models/Career";
+import {  Collection } from "mongodb";
+import { ObjectId } from "mongodb";
+
+interface DatabaseConnection {
+  collection: (name: string) => Collection;
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -12,14 +18,19 @@ export default async function handler(
   }
 
   try {
-    const db: any = await dbConnect();
+    const db = (await dbConnect() as unknown) as DatabaseConnection;
     if (!db) {
       return res.status(500).json({ message: "Database connection failed" });
     }
     const { userId } = req.body;
 
     // Fetch user profile
-    const user = await db.collection("users").findOne({ _id: userId });
+    // Convert userId to ObjectId
+    // const { ObjectId } = require("mongodb");
+    const userObjectId = typeof userId === "string" ? new ObjectId(userId) : userId;
+    const user = (await db
+      .collection("users")
+      .findOne({ _id: userObjectId })) as UserProfile | null;
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -28,11 +39,14 @@ export default async function handler(
     const insights = await generateAIInsights(user);
 
     // Save insights to database
-    const aiInsight: AICareerInsight = {
-      _id: new Date().getTime().toString(),
+    const aiInsight = {
+      _id: new ObjectId(),
       userId,
-      insights,
-      personalizedTips: await generatePersonalizedTips(user, insights),
+      insights: {
+        ...insights,
+        nextUpdateDue: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        personalizedTips: await generatePersonalizedTips(user),
+      },
       generatedAt: new Date(),
       nextUpdateDue: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     };
@@ -46,23 +60,25 @@ export default async function handler(
   }
 }
 
-async function generateAIInsights(user: UserProfile) {
+interface AIInsights {
+  strengthsAnalysis: string[];
+  improvementAreas: string[];
+  careerPathSuggestions: string[];
+  skillGapAnalysis: string[];
+  marketTrends: string[];
+  salaryInsights: {
+    currentMarketRate: string;
+    growthPotential: string;
+    recommendations: string[];
+  };
+  workLifeBalanceRecommendations: string[];
+  networkingOpportunities: string[];
+  personalizedAdvice: string[];
+}
+
+async function generateAIInsights(user: UserProfile): Promise<AIInsights> {
   // This would integrate with an AI service like OpenAI, but for now we'll use rule-based logic
-  const insights: {
-    strengthsAnalysis: string[];
-    improvementAreas: string[];
-    careerPathSuggestions: string[];
-    skillGapAnalysis: string[];
-    marketTrends: string[];
-    salaryInsights: {
-      currentMarketRate: string;
-      growthPotential: string;
-      recommendations: string[];
-    };
-    workLifeBalanceRecommendations: string[];
-    networkingOpportunities: string[];
-    personalizedAdvice: string[];
-  } = {
+  const insights: AIInsights = {
     strengthsAnalysis: [],
     improvementAreas: [],
     careerPathSuggestions: [],
@@ -79,7 +95,10 @@ async function generateAIInsights(user: UserProfile) {
   };
 
   // Strengths analysis based on profile
-  if (Array.isArray(user.skillsAndExperience) && user.skillsAndExperience.length > 5) {
+  if (
+    Array.isArray(user.skillsAndExperience) &&
+    user.skillsAndExperience.length > 5
+  ) {
     insights.strengthsAnalysis.push(
       "Diverse skill set with broad experience across multiple domains"
     );
@@ -114,15 +133,6 @@ async function generateAIInsights(user: UserProfile) {
   }
 
   // Skill gap analysis
-  const currentYear = new Date().getFullYear();
-  const trendingSkills = [
-    "AI/ML",
-    "Data Analysis",
-    "Digital Marketing",
-    "Project Management",
-    "UX/UI Design",
-  ];
-
   insights.skillGapAnalysis.push(
     "Consider upskilling in emerging technologies relevant to your industry"
   );
@@ -146,8 +156,23 @@ async function generateAIInsights(user: UserProfile) {
   return insights;
 }
 
-async function generatePersonalizedTips(user: UserProfile, insights: any) {
-  const tips = [];
+interface PersonalizedTip {
+  _id: string;
+  title: string;
+  content: string;
+  category: "maternity_leave" | "returning_to_work" | "career_growth" | "work_life_balance" | "networking" | "skills_development";
+  targetAudience: string[];
+  isPersonalized: boolean;
+  createdAt: Date;
+  tags: string[];
+  aiGenerated: boolean;
+  relevanceScore: number;
+}
+
+async function generatePersonalizedTips(
+  user: UserProfile
+): Promise<PersonalizedTip[]> {
+  const tips: PersonalizedTip[] = [];
 
   if (user.availabilityStatus === "maternity_leave") {
     tips.push({
@@ -155,7 +180,7 @@ async function generatePersonalizedTips(user: UserProfile, insights: any) {
       title: "Staying Connected During Maternity Leave",
       content:
         "Maintain professional relationships by occasionally checking in with colleagues and staying updated on industry news. Consider scheduling monthly coffee chats or video calls with key contacts.",
-      category: "maternity_leave" as "maternity_leave",
+      category: "maternity_leave",
       targetAudience: ["new_mothers", "maternity_leave"],
       isPersonalized: true,
       createdAt: new Date(),
@@ -171,7 +196,7 @@ async function generatePersonalizedTips(user: UserProfile, insights: any) {
       title: "Successful Return-to-Work Strategy",
       content:
         "Start with a gradual return if possible. Consider negotiating flexible hours or remote work arrangements. Communicate openly with your manager about your needs and expectations.",
-      category: "returning_to_work" as "returning_to_work",
+      category: "returning_to_work",
       targetAudience: ["returning_mothers"],
       isPersonalized: true,
       createdAt: new Date(),
@@ -194,30 +219,47 @@ export async function getTipsHandler(
   }
 
   try {
-    const db: any = await dbConnect();
+    const db = (await dbConnect() as unknown) as DatabaseConnection;
     const { userId } = req.query;
 
     // Get user profile to personalize tips
     if (db == null) {
       return res.status(500).json({ message: "Database connection failed" });
     }
-    const user = await db.collection("users").findOne({ _id: userId });
+    // const { ObjectId } = require("mongodb");
+    const userObjectId =
+      typeof userId === "string" ? new ObjectId(userId) : userId;
+    const user = (await db
+      .collection("users")
+      .findOne({ _id: userObjectId })) as UserProfile | null;
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     // Fetch personalized tips from AI insights
-    const aiInsights = await db
+    const aiInsights = (await db
       .collection("aiCareerInsights")
-      .findOne({ userId }, { sort: { generatedAt: -1 } });
+      .findOne(
+        { userId },
+        { sort: { generatedAt: -1 } }
+      )) as AICareerInsight | null;
 
-    let tips = [];
-    if (aiInsights) {
-      tips = aiInsights.personalizedTips;
+    let tips: PersonalizedTip[] = [];
+    if (aiInsights && aiInsights.insights && Array.isArray(aiInsights.insights.personalizedTips)) {
+      tips = (aiInsights.insights.personalizedTips as PersonalizedTip[]).map((tip) => ({
+        ...tip,
+        relevanceScore: typeof tip.relevanceScore === "number" ? tip.relevanceScore : 0,
+      }));
     }
-
+    // Ensure type safety for personalized tips
+    tips = aiInsights && aiInsights.insights && Array.isArray(aiInsights.insights.personalizedTips)
+      ? (aiInsights.insights.personalizedTips as PersonalizedTip[]).map((tip) => ({
+        ...tip,
+        relevanceScore: typeof tip.relevanceScore === "number" ? tip.relevanceScore : 0,
+      }))
+      : [];
     // Also fetch general tips that match user's profile
-    const generalTips = await db
+    const generalTipsRaw = await db
       .collection("careerTips")
       .find({
         $or: [
@@ -228,6 +270,32 @@ export async function getTipsHandler(
       .sort({ relevanceScore: -1 })
       .limit(5)
       .toArray();
+
+    interface CareerTipDocument {
+      _id?: ObjectId | string;
+      title?: string;
+      content?: string;
+      category?: PersonalizedTip["category"];
+      targetAudience?: string[];
+      isPersonalized?: boolean;
+      createdAt?: Date | string;
+      tags?: string[];
+      aiGenerated?: boolean;
+      relevanceScore?: number;
+    }
+    
+    const generalTips: PersonalizedTip[] = (generalTipsRaw as CareerTipDocument[]).map((tip) => ({
+      _id: tip._id ? tip._id.toString() : "",
+      title: tip.title ?? "",
+      content: tip.content ?? "",
+      category: tip.category ?? "career_growth",
+      targetAudience: Array.isArray(tip.targetAudience) ? tip.targetAudience : [],
+      isPersonalized: tip.isPersonalized ?? false,
+      createdAt: tip.createdAt ? new Date(tip.createdAt) : new Date(),
+      tags: Array.isArray(tip.tags) ? tip.tags : [],
+      aiGenerated: tip.aiGenerated ?? false,
+      relevanceScore: typeof tip.relevanceScore === "number" ? tip.relevanceScore : 0,
+    }));
 
     tips = [...tips, ...generalTips];
 

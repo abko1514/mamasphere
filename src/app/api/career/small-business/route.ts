@@ -1,7 +1,5 @@
-// /api/career/small-businesses.ts
 import { NextApiRequest, NextApiResponse } from "next";
 import { dbConnect } from "@/lib/dbConnect";
-import { SmallBusiness } from "@/models/Career";
 
 export default async function handler(
   req: NextApiRequest,
@@ -19,10 +17,11 @@ export default async function handler(
 
 async function createSmallBusiness(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const db: any = await dbConnect();
-    if (db == null) {
-      throw new Error("Database connection failed");
-    }
+    await dbConnect();
+    const { MongoClient } = await import("mongodb");
+    const client = new MongoClient(process.env.MONGODB_URI as string);
+    await client.connect();
+    const db = client.db();
     const businessData = req.body;
 
     // Validate required fields
@@ -35,8 +34,9 @@ async function createSmallBusiness(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    const newBusiness: SmallBusiness = {
-      _id: new Date().getTime().toString(),
+    const { ObjectId } = await import("mongodb");
+    const newBusiness = {
+      _id: new ObjectId(),
       ...businessData,
       isVerified: false,
       rating: 0,
@@ -52,18 +52,21 @@ async function createSmallBusiness(req: NextApiRequest, res: NextApiResponse) {
     res.status(500).json({ message: "Internal server error" });
   }
 }
-
 async function getSmallBusinesses(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const db: any = await dbConnect();
-    if (db == null) {
-      throw new Error("Database connection failed");
-    }
-    const businesses = await db.collection("smallBusinesses").find({}).toArray();
+    await dbConnect();
+    const { MongoClient } = await import("mongodb");
+    const client = new MongoClient(process.env.MONGODB_URI as string);
+    await client.connect();
+    const db = client.db();
+    const businesses = await db
+      .collection("smallBusinesses")
+      .find({})
+      .toArray();
     res.status(200).json(businesses);
+    await client.close();
   } catch (error) {
     console.error("Error fetching small businesses:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
-

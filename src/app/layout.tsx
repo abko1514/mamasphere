@@ -4,7 +4,6 @@ import "./globals.css";
 //import Navbar from "@/app/core component/Navbar";
 import Script from "next/script";
 import ClientLayout from "./ClientLayout";
-import { CronBackgroundService } from "@/lib/services/cronBackgroundService";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -50,17 +49,18 @@ export default async function RootLayout({
           crossOrigin=""
         />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
         <ClientLayout>
           <main>
             <AuthProvider session={session}>
               <ToastContainer position="top-center" />
-            
               {children}
             </AuthProvider>
-              {/* Register Service Worker */}
-              <Script id="register-sw" strategy="afterInteractive">
-                {`
+            {/* Register Service Worker */}
+            <Script id="register-sw" strategy="afterInteractive">
+              {`
                 if ('serviceWorker' in navigator) {
                   window.addEventListener('load', function() {
                     navigator.serviceWorker.register('/sw.js')
@@ -72,7 +72,7 @@ export default async function RootLayout({
                   });
                 }
               `}
-              </Script>
+            </Script>
           </main>
         </ClientLayout>
       </body>

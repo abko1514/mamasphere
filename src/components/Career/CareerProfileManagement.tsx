@@ -25,15 +25,12 @@ import {
   DollarSign,
   GraduationCap,
   Languages,
-  Save,
   X,
   Camera,
   Phone,
   Mail,
-  School,
   Users,
   BookOpen,
-  Shield,
   Eye,
   MessageSquare,
 } from "lucide-react";
@@ -57,10 +54,32 @@ interface UserProfile {
   currentRole?: string;
   company?: string;
   industry: string;
-  workExperience: any[];
+  workExperience: {
+    id: string;
+    company: string;
+    position: string;
+    startDate: Date;
+    endDate: Date | null;
+    isCurrent: boolean;
+    description: string;
+    achievements: string[];
+    skills: string[];
+    location: string;
+    employmentType: string;
+  }[];
   skillsAndExperience: string[];
   educationLevel: string;
-  educationDetails: any[];
+  educationDetails: {
+    id: string;
+    institution: string;
+    degree: string;
+    field: string;
+    startDate: Date;
+    endDate: Date;
+    gpa?: number;
+    achievements?: string[];
+    description?: string;
+  }[];
   careerGoals?: string;
   workPreference: string;
   availabilityStatus: string;
@@ -69,8 +88,8 @@ interface UserProfile {
     max: number;
     currency: string;
   };
-  certifications: any[];
-  languages: any[];
+  certifications: { id: string; name: string; issuer: string; issueDate: Date; expiryDate: Date | null; credentialUrl?: string; skills?: string[] }[];
+  languages: { language: string; proficiency: string }[];
   portfolioUrl?: string;
   linkedinUrl?: string;
   githubUrl?: string;
@@ -117,21 +136,12 @@ const CareerProfileManagement = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [aiInsights, setAiInsights] = useState<AICareerInsight | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Partial<UserProfile>>(
     {}
   );
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const [activeTab, setActiveTab] = useState("overview");
-
-  // Mock session data
-  const mockSession = {
-    user: {
-      name: "Sarah Johnson",
-      email: "sarah.johnson@email.com",
-    },
-  };
 
   // Mock profile data
   const mockProfile: UserProfile = {
@@ -693,7 +703,7 @@ const CareerProfileManagement = () => {
   }: {
     tabId: string;
     label: string;
-    icon: any;
+    icon: React.ElementType;
     isActive: boolean;
   }) => (
     <button
@@ -1030,7 +1040,9 @@ const CareerProfileManagement = () => {
                               {formatDate(exp.startDate)} -{" "}
                               {exp.isCurrent
                                 ? "Present"
-                                : formatDate(exp.endDate)}
+                                : exp.endDate
+                                ? formatDate(exp.endDate)
+                                : ""}
                             </span>
                           </div>
                           {exp.description && (
@@ -1093,7 +1105,7 @@ const CareerProfileManagement = () => {
                   </button>
                 </div>
                 <div className="space-y-4">
-                  {profile.educationDetails.map((edu, index) => (
+                  {profile.educationDetails.map((edu, _index) => (
                     <div key={edu.id} className="flex gap-4">
                       <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                         <GraduationCap className="text-blue-600" size={20} />
@@ -1668,7 +1680,7 @@ const CareerProfileManagement = () => {
               <div className="relative">
                 <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-purple-200"></div>
 
-                {profile.workExperience.map((exp, index) => (
+                {profile.workExperience.map((exp, _index) => (
                   <div key={exp.id} className="relative mb-12 last:mb-0">
                     <div className="absolute left-6 w-4 h-4 bg-purple-500 rounded-full border-4 border-white shadow-sm"></div>
 
@@ -1697,7 +1709,9 @@ const CareerProfileManagement = () => {
                             {formatDate(exp.startDate)} -{" "}
                             {exp.isCurrent
                               ? "Present"
-                              : formatDate(exp.endDate)}
+                              : exp.endDate
+                              ? formatDate(exp.endDate)
+                              : ""}
                           </span>
                           {exp.isCurrent && (
                             <div className="mt-2">

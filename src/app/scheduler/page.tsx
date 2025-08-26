@@ -58,22 +58,6 @@ export default function DashboardPage() {
     useState<NotificationPermission>("default");
   const [notifications, setNotifications] = useState<string[]>([]);
 
-  // Redirect if not authenticated
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (status === "unauthenticated") {
-    redirect("/auth/signin");
-  }
-
   // Request notification permission on component mount
   useEffect(() => {
     if ("Notification" in window) {
@@ -156,6 +140,22 @@ export default function DashboardPage() {
 
     setNotifications(newNotifications);
   }, [tasks, getUpcomingReminders, getOverdueTasks, getTodayTasks]);
+
+  // Redirect if not authenticated
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    redirect("/auth/signin");
+  }
 
   const handleAddTask = async (taskData: TaskData): Promise<void> => {
     try {
@@ -386,8 +386,8 @@ export default function DashboardPage() {
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2 text-green-700 text-sm">
             <CheckCircle2 size={16} />
             <span>
-              🔔 Browser notifications are enabled! You'll receive alerts for
-              reminders.
+              🔔 Browser notifications are enabled! You&apos;ll receive alerts
+              for reminders.
             </span>
           </div>
         </div>
