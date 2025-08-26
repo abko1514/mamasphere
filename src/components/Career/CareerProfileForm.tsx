@@ -308,9 +308,9 @@ const CareerProfileForm = () => {
   // };
 
   // Remove work experience
-  interface RemoveWorkExperienceFn {
-    (id: string): void;
-  }
+  // interface RemoveWorkExperienceFn {
+  //   (id: string): void;
+  // }
 
   // const removeWorkExperience: RemoveWorkExperienceFn = (id) => {
   //   setFormData((prev) => ({
@@ -320,13 +320,13 @@ const CareerProfileForm = () => {
   // };
 
   // Update work experience
-  interface UpdateWorkExperienceFn {
-    (
-      id: string,
-      field: keyof WorkExperience,
-      value: WorkExperience[keyof WorkExperience]
-    ): void;
-  }
+  // interface UpdateWorkExperienceFn {
+  //   (
+  //     id: string,
+  //     field: keyof WorkExperience,
+  //     value: WorkExperience[keyof WorkExperience]
+  //   ): void;
+  // }
 
   // const updateWorkExperience: UpdateWorkExperienceFn = (id, field, value) => {
   //   setFormData((prev) => ({

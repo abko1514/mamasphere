@@ -15,8 +15,16 @@ import { careerService } from "@/lib/careerService";
 interface JobsSectionProps {
   jobs: JobRecommendation[];
   loading: boolean;
-  filters: any;
-  setFilters: (filters: any) => void;
+  filters: {
+    type: string;
+    location: string;
+    workArrangement: string;
+  };
+  setFilters: (filters: {
+    type: string;
+    location: string;
+    workArrangement: string;
+  }) => void;
   onApplyFilters: () => void;
   userId: string;
 }

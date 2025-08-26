@@ -1,5 +1,5 @@
 // lib/careerService.ts
-import UserProfile from "@/models/UserProfile";
+// import UserProfile from "@/models/UserProfile";
 
 export interface CareerTip {
   _id: string;
@@ -18,6 +18,8 @@ export interface CareerTip {
   relevanceScore: number;
   createdAt: Date;
   updatedAt: Date;
+  targetAudience: string;
+  aiGenerated: boolean;
 }
 
 export interface JobRecommendation {
@@ -36,8 +38,11 @@ export interface JobRecommendation {
   description: string;
   matchScore: number;
   isMaternityFriendly: boolean;
+  flexibleHours: boolean;
   benefitsHighlights: string[];
   applicationDeadline?: Date;
+  applicationUrl?: string;
+  reasonsForMatch?: string[];
   postedDate: Date;
   jobType: "full-time" | "part-time" | "contract" | "freelance";
   experienceLevel: "entry" | "mid" | "senior" | "executive";
@@ -80,6 +85,7 @@ export interface FreelanceOpportunity {
     min: number;
     max: number;
     currency: string;
+    type: "hourly" | "project" | "monthly";
   };
   clientName: string;
 }
@@ -115,6 +121,15 @@ export interface SmallBusiness {
   tags: string[];
   verified: boolean;
   createdAt: Date;
+  businessName: string;
+  ownerName: string;
+  ownerId: string;
+  category: string;
+  images: string[];
+  isVerified: boolean;
+  rating: number;
+  reviewCount: number;
+  isMomOwned: boolean;
 }
 
 export interface AICareerInsight {
@@ -206,7 +221,7 @@ class CareerService {
         limit: limit.toString(),
         ...(filters && Object.fromEntries(
           Object.entries(filters)
-            .filter(([_, value]) => value !== undefined)
+            .filter(([ value]) => value !== undefined)
             .map(([key, value]) => [key, value.toString()])
         )),
       });
@@ -267,7 +282,7 @@ class CareerService {
         limit: limit.toString(),
         ...(filters && Object.fromEntries(
           Object.entries(filters)
-            .filter(([_, value]) => value !== undefined)
+            .filter(([ value]) => value !== undefined)
             .map(([key, value]) => [key, value.toString()])
         )),
       });
@@ -335,7 +350,7 @@ class CareerService {
   async applyToJob(
     userId: string,
     jobId: string,
-    applicationData: any
+    applicationData: Record<string, any>
   ): Promise<boolean> {
     try {
       const response = await fetch(
@@ -395,6 +410,8 @@ class CareerService {
         relevanceScore: 95,
         createdAt: new Date("2024-01-15"),
         updatedAt: new Date("2024-01-15"),
+        targetAudience: "working mothers",
+        aiGenerated: false,
       },
       {
         _id: "tip_2",
@@ -409,6 +426,8 @@ class CareerService {
         relevanceScore: 88,
         createdAt: new Date("2024-01-10"),
         updatedAt: new Date("2024-01-10"),
+        targetAudience: "working mothers",
+        aiGenerated: false,
       },
       {
         _id: "tip_3",
@@ -428,6 +447,8 @@ class CareerService {
         relevanceScore: 92,
         createdAt: new Date("2024-01-08"),
         updatedAt: new Date("2024-01-08"),
+        targetAudience: "working mothers",
+        aiGenerated: false,
       },
       {
         _id: "tip_4",
@@ -447,6 +468,8 @@ class CareerService {
         relevanceScore: 90,
         createdAt: new Date("2024-01-05"),
         updatedAt: new Date("2024-01-05"),
+        targetAudience: "working mothers",
+        aiGenerated: false,
       },
       {
         _id: "tip_5",
@@ -466,6 +489,8 @@ class CareerService {
         relevanceScore: 85,
         createdAt: new Date("2024-01-03"),
         updatedAt: new Date("2024-01-03"),
+        targetAudience: "working mothers",
+        aiGenerated: false,
       },
     ];
   }
@@ -498,6 +523,7 @@ class CareerService {
           "Lead our digital marketing initiatives for a mission-driven tech company focused on social impact. Perfect for an experienced marketer who wants to make a difference while maintaining work-life balance.",
         matchScore: 94,
         isMaternityFriendly: true,
+        flexibleHours: true,
         benefitsHighlights: [
           "12 weeks paid parental leave",
           "Flexible hours",
@@ -541,6 +567,7 @@ class CareerService {
           "Shape the marketing strategy for innovative sustainability products. Join a values-driven company that prioritizes both environmental impact and employee well-being.",
         matchScore: 91,
         isMaternityFriendly: true,
+        flexibleHours: true,
         benefitsHighlights: [
           "Unlimited PTO",
           "Equity package",
@@ -584,6 +611,7 @@ class CareerService {
           "Work with diverse clients on exciting marketing projects. Set your own schedule and choose projects that align with your values and interests.",
         matchScore: 87,
         isMaternityFriendly: true,
+        flexibleHours: true,
         benefitsHighlights: [
           "Flexible schedule",
           "Choose your projects",
@@ -634,6 +662,7 @@ class CareerService {
           min: 5000,
           max: 8000,
           currency: "USD",
+          type: "project",
         },
         clientName: "LearnSmart Academy",
       },
@@ -670,6 +699,7 @@ class CareerService {
           min: 85,
           max: 120,
           currency: "USD",
+          type: "hourly",
         },
         clientName: "GreenTech Solutions",
       },
@@ -704,6 +734,7 @@ class CareerService {
           min: 2500,
           max: 3500,
           currency: "USD",
+          type: "monthly",
         },
         clientName: "Modern Family Co.",
       },
@@ -753,6 +784,15 @@ class CareerService {
         tags: ["technology", "consulting", "remote-work", "family-friendly"],
         verified: true,
         createdAt: new Date("2023-06-15"),
+        businessName: "MomTech Consulting",
+        ownerName: "Sarah Chen",
+        ownerId: "owner_1",
+        category: "Technology Consulting",
+        images: ["https://momtechconsulting.com/image1.jpg"],
+        isVerified: true,
+        rating: 4.9,
+        reviewCount: 23,
+        isMomOwned: true,
       },
       {
         _id: "business_2",
@@ -795,6 +835,15 @@ class CareerService {
         tags: ["marketing", "branding", "content", "family-focused"],
         verified: true,
         createdAt: new Date("2023-03-20"),
+        businessName: "Balanced Marketing Agency",
+        ownerName: "Jessica Rodriguez & Maria Thompson",
+        ownerId: "owner_2",
+        category: "Marketing & Advertising",
+        images: ["https://balancedmarketing.co/image1.jpg"],
+        isVerified: true,
+        rating: 4.8,
+        reviewCount: 17,
+        isMomOwned: true,
       },
       {
         _id: "business_3",
@@ -839,6 +888,15 @@ class CareerService {
         ],
         verified: true,
         createdAt: new Date("2022-09-10"),
+        businessName: "FlexCareers Coaching",
+        ownerName: "Amanda Foster",
+        ownerId: "owner_3",
+        category: "Professional Services",
+        images: ["https://flexcareerscoaching.com/image1.jpg"],
+        isVerified: true,
+        rating: 4.7,
+        reviewCount: 12,
+        isMomOwned: true,
       },
     ];
   }

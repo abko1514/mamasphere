@@ -1105,7 +1105,7 @@ const CareerProfileManagement = () => {
                   </button>
                 </div>
                 <div className="space-y-4">
-                  {profile.educationDetails.map((edu, _index) => (
+                  {profile.educationDetails.map((edu) => (
                     <div key={edu.id} className="flex gap-4">
                       <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                         <GraduationCap className="text-blue-600" size={20} />
@@ -1680,7 +1680,7 @@ const CareerProfileManagement = () => {
               <div className="relative">
                 <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-purple-200"></div>
 
-                {profile.workExperience.map((exp, _index) => (
+                {profile.workExperience.map((exp) => (
                   <div key={exp.id} className="relative mb-12 last:mb-0">
                     <div className="absolute left-6 w-4 h-4 bg-purple-500 rounded-full border-4 border-white shadow-sm"></div>
 

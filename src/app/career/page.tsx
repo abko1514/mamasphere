@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { getSession } from "next-auth/react";
 import Head from "next/head";
 import { useRouter, useSearchParams } from "next/navigation";
+import { SmallBusiness } from "@/models/Career"; // Make sure this is correct!
 import {
   Briefcase,
   TrendingUp,
@@ -23,7 +24,6 @@ import {
   FreelanceOpportunity,
   AICareerInsight,
   CareerTip,
-  SmallBusiness,
 } from "@/models/Career";
 import { UserProfile } from "@/models/UserDetails";
 import { TipsSection } from "@/components/Career/TipsSection";
@@ -150,37 +150,52 @@ export default function CareerSupportPage() {
       ]);
 
       setTips(
-        tipsData.map((tip: any) => ({
+        tipsData.map((tip) => ({
           ...tip,
-          targetAudience: tip.targetAudience ?? "",
+          targetAudience: Array.isArray(tip.targetAudience)
+            ? tip.targetAudience
+            : typeof tip.targetAudience === "string"
+            ? [tip.targetAudience]
+            : [],
           aiGenerated: tip.aiGenerated ?? false,
-        }))
+          isPersonalized: tip.isPersonalized ?? false,
+          createdAt: tip.createdAt ? new Date(tip.createdAt) : new Date(),
+          updatedAt: tip.updatedAt ? new Date(tip.updatedAt) : new Date(),
+          tags: tip.tags ?? [],
+          relevanceScore: tip.relevanceScore,
+        })) as CareerTip[]
       );
+
       setJobs(jobsData);
       setBusinesses(
-        businessData.map((biz: any) => ({
-          _id: biz._id,
-          businessName: biz.businessName ?? "",
-          ownerName: biz.ownerName ?? "",
-          ownerId: biz.ownerId ?? "",
-          category: biz.category ?? "",
-          description: biz.description ?? "",
-          location: biz.location ?? "",
-          website: biz.website ?? "",
-          momOwned: biz.momOwned ?? false,
-          createdAt: biz.createdAt ? new Date(biz.createdAt) : new Date(),
-          updatedAt: biz.updatedAt ? new Date(biz.updatedAt) : new Date(),
-          services: biz.services ?? [],
-          contactInfo: biz.contactInfo ?? { email: "", phone: "", address: "" },
-          images: biz.images ?? [],
-          isVerified: biz.isVerified ?? false,
-          rating: biz.rating ?? 0,
-          reviews: biz.reviews ?? [],
-          tags: biz.tags ?? [],
-          featured: biz.featured ?? false,
-          reviewCount: biz.reviewCount ?? (Array.isArray(biz.reviews) ? biz.reviews.length : 0),
-          isMomOwned: biz.isMomOwned ?? biz.momOwned ?? false,
-        }))
+        businessData.map(
+          (biz): SmallBusiness => ({
+            _id: biz._id ?? "",
+            businessName: biz.businessName ?? "",
+            ownerName: biz.ownerName ?? "",
+            ownerId: biz.ownerId ?? "",
+            category: biz.category ?? "",
+            description: biz.description ?? "",
+            services: biz.services ?? [],
+            location: biz.location ?? "",
+            contactInfo: {
+              email: biz.contact?.email ?? "",
+              phone: biz.contact?.phone ?? "",
+              socialMedia: {
+                instagram: biz.contact?.social?.instagram ?? "",
+                facebook: biz.contact?.social?.facebook ?? "",
+                linkedin: biz.contact?.social?.linkedin ?? "",
+              },
+            },
+            images: biz.images ?? [],
+            isVerified: biz.isVerified ?? false,
+            rating: biz.rating ?? 0,
+            reviewCount: biz.reviewCount ?? 0,
+            isMomOwned: biz.isMomOwned ?? false,
+            createdAt: biz.createdAt ? new Date(biz.createdAt) : new Date(),
+            tags: biz.tags ?? [],
+          })
+        )
       );
     } catch (error) {
       console.error("Error loading career data:", error);
@@ -814,31 +829,19 @@ export default function CareerSupportPage() {
 
           {activeTab === "jobs" && (
             <JobsSection
-              jobs={jobs.map((job: any) => ({
-                _id: job._id,
-                title: job.title ?? "",
-                company: job.company ?? "",
-                location: job.location ?? "",
-                workArrangement: job.workArrangement ?? "",
-                salary: job.salary ?? "",
-                matchScore: job.matchScore ?? 0,
-                isMaternityFriendly: job.isMaternityFriendly ?? false,
-                postedAt: job.postedAt ? new Date(job.postedAt) : new Date(),
-                postedDate: job.postedDate ? new Date(job.postedDate) : (job.postedAt ? new Date(job.postedAt) : new Date()),
-                description: job.description ?? "",
-                type: job.type ?? "",
-                requirements: job.requirements ?? [],
-                benefits: job.benefits ?? [],
+              jobs={jobs.map((job: JobRecommendation) => ({
+                ...job,
+                workArrangement:
+                  job.workArrangement === "flexible"
+                    ? "remote"
+                    : job.workArrangement ?? "remote",
+                type: job.jobType ?? "",
+                requirements: job.requiredSkills ?? [],
+                benefits: job.benefitsHighlights ?? [],
                 flexibleHours: job.flexibleHours ?? false,
+                maternityFriendly: job.isMaternityFriendly ?? false,
+                parentingSupport: job.parentingSupport ?? [],
                 applicationUrl: job.applicationUrl ?? "",
-                saved: job.saved ?? false,
-                applied: job.applied ?? false,
-                tags: job.tags ?? [],
-                industry: job.industry ?? "",
-                experienceLevel: job.experienceLevel ?? "",
-                isRemote: job.isRemote ?? false,
-                companyLogo: job.companyLogo ?? "",
-                isPersonalized: job.isPersonalized ?? false,
                 reasonsForMatch: job.reasonsForMatch ?? [],
               }))}
               loading={loading}
