@@ -1,26 +1,23 @@
-//api/career/tips/route.ts;
-import type { NextApiRequest, NextApiResponse } from "next";
+// app/api/career/tips/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { careerService } from "@/lib/careerService";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "GET") {
-    res.setHeader("Allow", ["GET"]);
-    return res.status(405).json({ message: "Method not allowed" });
-  }
-
+export async function GET(request: NextRequest) {
   try {
-    const { userId, limit = "20" } = req.query;
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+    const limit = searchParams.get("limit") || "20";
 
-    if (!userId || typeof userId !== "string") {
-      return res.status(400).json({ message: "User ID is required" });
+    if (!userId) {
+      return NextResponse.json(
+        { message: "User ID is required" },
+        { status: 400 }
+      );
     }
 
     const tips = await careerService.getPersonalizedTips(
       userId,
-      parseInt(limit as string)
+      parseInt(limit)
     );
 
     // Track tips viewed
@@ -28,9 +25,41 @@ export default async function handler(
       tipsCount: tips.length,
     });
 
-    return res.status(200).json(tips);
+    return NextResponse.json(tips, { status: 200 });
   } catch (error) {
     console.error("Error fetching career tips:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
+}
+
+// Add handlers for other methods to return 405
+export async function POST() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "GET" } }
+  );
+}
+
+export async function PUT() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "GET" } }
+  );
+}
+
+export async function DELETE() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "GET" } }
+  );
+}
+
+export async function PATCH() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "GET" } }
+  );
 }
