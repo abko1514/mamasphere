@@ -45,7 +45,7 @@ const features = [
     description:
       "Streamlines daily routines by intelligently prioritizing tasks, deadlines, and personal goals.",
     icon: Calendar,
-    href: "/scheduling",
+    href: "/scheduler",
   },
   {
     id: "meal-planning",

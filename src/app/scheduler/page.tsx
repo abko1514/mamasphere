@@ -12,6 +12,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { redirect } from "next/navigation";
+import Navbar from "../core component/Navbar";
 
 interface Task {
   _id: string;
@@ -269,6 +270,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
+      <Navbar/>
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white p-4 shadow-lg">
         <div className="max-w-4xl mx-auto">

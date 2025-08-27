@@ -31,6 +31,7 @@ import { JobsSection } from "@/components/Career/JobsSection";
 import { FreelanceSection } from "@/components/Career/FreelanceSection";
 import { BusinessSection } from "@/components/Career/BusinessSection";
 import ProfileButton from "@/components/Career/ProfileButton";
+import Navbar from "../core component/Navbar";
 
 interface CareerSupportPageProps {
   user: {
@@ -384,6 +385,7 @@ export default function CareerSupportPage() {
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 flex items-center justify-center">
+        <Navbar/>
         <div className="text-center max-w-md mx-auto">
           <div className="w-24 h-24 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
             <Briefcase className="text-white" size={32} />
@@ -408,6 +410,7 @@ export default function CareerSupportPage() {
 
   return (
     <>
+    <Navbar/>
       <Head>
         <title>Career Support - Mamasphere</title>
         <meta
