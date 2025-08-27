@@ -1,32 +1,65 @@
-// ===== 1. Fix api/cron/initialize/route.ts =====
-import { NextResponse } from "next/server";
-import { CronBackgroundService } from "@/lib/services/cronBackgroundService";
+// app/api/career/tips/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { careerService } from "@/lib/careerService";
 
-export async function POST() {
+export async function GET(request: NextRequest) {
   try {
-    // Only allow cron initialization on the server
-    if (typeof window !== "undefined") {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+    const limit = searchParams.get("limit") || "20";
+
+    if (!userId) {
       return NextResponse.json(
-        { error: "Cron jobs can only be initialized on the server" },
+        { message: "User ID is required" },
         { status: 400 }
       );
     }
 
-    await CronBackgroundService.ensureCronIsRunning();
+    const tips = await careerService.getPersonalizedTips(
+      userId,
+      parseInt(limit)
+    );
 
-    return NextResponse.json({
-      success: true,
-      message: "Cron jobs initialized successfully",
-      status: CronBackgroundService.isCronRunning(),
+    // Track tips viewed
+    await careerService.trackUserActivity(userId, "tips_viewed", {
+      tipsCount: tips.length,
     });
+
+    return NextResponse.json(tips, { status: 200 });
   } catch (error) {
-    console.error("Failed to initialize cron jobs:", error);
+    console.error("Error fetching career tips:", error);
     return NextResponse.json(
-      {
-        error: "Failed to initialize cron jobs",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
+      { message: "Internal server error" },
       { status: 500 }
     );
   }
+}
+
+// Add handlers for other methods to return 405
+export async function POST() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "GET" } }
+  );
+}
+
+export async function PUT() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "GET" } }
+  );
+}
+
+export async function DELETE() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "GET" } }
+  );
+}
+
+export async function PATCH() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "GET" } }
+  );
 }

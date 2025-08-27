@@ -1,36 +1,22 @@
-// pages/api/career/save-job.ts
-import type { NextApiRequest, NextApiResponse } from "next";
+// app/api/career/save-job/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { careerService } from "@/lib/careerService";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
-    return res.status(405).json({ message: "Method not allowed" });
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const { userId, jobId, applicationData } = req.body;
+    const { userId, jobId, applicationData } = await request.json();
 
     if (!userId || !jobId) {
-      return res
-        .status(400)
-        .json({ message: "User ID and Job ID are required" });
+      return NextResponse.json(
+        { message: "User ID and Job ID are required" },
+        { status: 400 }
+      );
     }
 
-    const success = await careerService.saveJobApplication(
-      userId,
+    await careerService.saveJobApplication(
       jobId,
-      applicationData
+      userId
     );
-
-    if (!success) {
-      return res
-        .status(500)
-        .json({ message: "Failed to save job application" });
-    }
 
     // Track job application
     await careerService.trackUserActivity(userId, "job_application", {
@@ -38,11 +24,44 @@ export default async function handler(
       hasApplicationData: !!applicationData,
     });
 
-    return res
-      .status(201)
-      .json({ message: "Job application saved successfully" });
+    return NextResponse.json(
+      { message: "Job application saved successfully" },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error saving job application:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
+}
+
+// Add other methods if needed, or return 405 for non-POST requests
+export async function GET() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "POST" } }
+  );
+}
+
+export async function PUT() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "POST" } }
+  );
+}
+
+export async function DELETE() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "POST" } }
+  );
+}
+
+export async function PATCH() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "POST" } }
+  );
 }

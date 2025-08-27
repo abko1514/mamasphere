@@ -1,23 +1,16 @@
-// pages/api/career/apply-job.ts
-import type { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 import { careerService } from "@/lib/careerService";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
-    return res.status(405).json({ message: "Method not allowed" });
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const { userId, jobId, applicationData } = req.body;
+    const body = await request.json();
+    const { userId, jobId, applicationData } = body;
 
     if (!userId || !jobId || !applicationData) {
-      return res.status(400).json({
-        message: "User ID, Job ID, and application data are required",
-      });
+      return NextResponse.json(
+        { message: "User ID, Job ID, and application data are required" },
+        { status: 400 }
+      );
     }
 
     const success = await careerService.applyToJob(
@@ -27,9 +20,10 @@ export default async function handler(
     );
 
     if (!success) {
-      return res
-        .status(500)
-        .json({ message: "Failed to submit job application" });
+      return NextResponse.json(
+        { message: "Failed to submit job application" },
+        { status: 500 }
+      );
     }
 
     // Track job application
@@ -38,11 +32,28 @@ export default async function handler(
       applicationSubmitted: true,
     });
 
-    return res
-      .status(201)
-      .json({ message: "Job application submitted successfully" });
+    return NextResponse.json(
+      { message: "Job application submitted successfully" },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error applying to job:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
+}
+
+// Add other HTTP methods if needed, or return 405 for unsupported methods
+export async function GET() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
+}
+
+export async function PUT() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
+}
+
+export async function DELETE() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
 }

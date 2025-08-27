@@ -2,27 +2,18 @@ import React, { useState, useEffect } from "react";
 import {
   User,
   Briefcase,
-  MapPin,
   Heart,
   GraduationCap,
   Target,
-  DollarSign,
-  Calendar,
   Plus,
   Trash2,
   Save,
-  Edit3,
-  Baby,
-  Home,
-  Globe,
-  Phone,
-  Mail,
   CheckCircle,
-  AlertCircle,
   ArrowLeft,
   ArrowRight,
   X,
   Settings,
+  Globe,
 } from "lucide-react";
 
 // Modal wrapper component
@@ -141,6 +132,29 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
     currency: string;
   }
 
+  type FamilyStatus =
+    | "single"
+    | "partnered"
+    | "married"
+    | "divorced"
+    | "widowed";
+  type EducationLevel =
+    | "high_school"
+    | "associates"
+    | "bachelors"
+    | "masters"
+    | "phd"
+    | "other";
+  type WorkPreference = "remote" | "hybrid" | "onsite" | "flexible";
+  type AvailabilityStatus =
+    | "maternity_leave"
+    | "returning_to_work"
+    | "actively_working"
+    | "seeking_opportunities"
+    | "career_break";
+  type MentorStatus = "seeking" | "offering" | "both" | "none";
+  type ProfileVisibility = "public" | "community" | "private";
+
   interface CareerProfileFormData {
     // Personal Information
     name: string;
@@ -157,20 +171,14 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
     pregnancyWeek: string;
     childrenAges: number[];
     partnerName: string;
-    familyStatus: "single" | "partnered" | "married" | "divorced" | "widowed";
+    familyStatus: FamilyStatus;
 
     // Career Information
     currentRole: string;
     company: string;
     industry: string;
     yearsOfExperience: number;
-    educationLevel:
-      | "high_school"
-      | "associates"
-      | "bachelors"
-      | "masters"
-      | "phd"
-      | "other";
+    educationLevel: EducationLevel;
     skillsAndExperience: string[];
 
     // Work Experience & Education
@@ -179,13 +187,8 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
 
     // Career Goals & Preferences
     careerGoals: string;
-    workPreference: "remote" | "hybrid" | "onsite" | "flexible";
-    availabilityStatus:
-      | "maternity_leave"
-      | "returning_to_work"
-      | "actively_working"
-      | "seeking_opportunities"
-      | "career_break";
+    workPreference: WorkPreference;
+    availabilityStatus: AvailabilityStatus;
     desiredSalaryRange: DesiredSalaryRange;
     careerBreakDuration: number;
     returnToWorkDate: string;
@@ -203,7 +206,7 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
     // Community & Social
     interests: string[];
     supportGroups: string[];
-    mentorStatus: "seeking" | "offering" | "both" | "none";
+    mentorStatus: MentorStatus;
 
     // Preferences
     jobAlerts: boolean;
@@ -212,7 +215,7 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
     mentorshipInterested: boolean;
 
     // Privacy Settings
-    profileVisibility: "public" | "community" | "private";
+    profileVisibility: ProfileVisibility;
     showContactInfo: boolean;
     allowMessages: boolean;
   }
@@ -535,7 +538,7 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
   const updateWorkExperience = (
     id: string,
     field: keyof WorkExperience,
-    value: any
+    value: string | boolean | string[]
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -712,7 +715,7 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
                 }
                 rows={4}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Tell us about yourself, your background, and what you're passionate about..."
+                placeholder="Tell us about yourself, your background, and what you&apos;re passionate about..."
               />
             </div>
 
@@ -786,7 +789,7 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      familyStatus: e.target.value as any,
+                      familyStatus: e.target.value as FamilyStatus,
                     }))
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -815,7 +818,7 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
                       }))
                     }
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Partner's name"
+                    placeholder="Partner&apos;s name"
                   />
                 </div>
               )}
@@ -837,7 +840,7 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
                   htmlFor="pregnant"
                   className="text-sm font-medium text-gray-700"
                 >
-                  I'm currently pregnant
+                  I&apos;m currently pregnant
                 </label>
               </div>
 
@@ -885,7 +888,7 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="block text-sm font-medium text-gray-700">
-                    Children's Ages
+                    Children&apos;s Ages
                   </label>
                   <button
                     type="button"
@@ -937,7 +940,7 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      mentorStatus: e.target.value as any,
+                      mentorStatus: e.target.value as MentorStatus,
                     }))
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -1058,15 +1061,15 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      educationLevel: e.target.value as any,
+                      educationLevel: e.target.value as EducationLevel,
                     }))
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="high_school">High School</option>
-                  <option value="associates">Associate's Degree</option>
-                  <option value="bachelors">Bachelor's Degree</option>
-                  <option value="masters">Master's Degree</option>
+                  <option value="associates">Associate&apos;s Degree</option>
+                  <option value="bachelors">Bachelor&apos;s Degree</option>
+                  <option value="masters">Master&apos;s Degree</option>
                   <option value="phd">PhD</option>
                   <option value="other">Other</option>
                 </select>
@@ -1398,7 +1401,7 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      workPreference: e.target.value as any,
+                      workPreference: e.target.value as WorkPreference,
                     }))
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -1419,7 +1422,7 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      availabilityStatus: e.target.value as any,
+                      availabilityStatus: e.target.value as AvailabilityStatus,
                     }))
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -1819,7 +1822,14 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
                             ...prev,
                             languages: prev.languages.map((l, i) =>
                               i === index
-                                ? { ...l, proficiency: e.target.value as any }
+                                ? {
+                                    ...l,
+                                    proficiency: e.target.value as
+                                      | "basic"
+                                      | "intermediate"
+                                      | "advanced"
+                                      | "native",
+                                  }
                                 : l
                             ),
                           }))
@@ -1930,7 +1940,7 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
                       className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                     />
                     <span className="text-sm text-gray-700">
-                      I'm interested in mentorship opportunities
+                      I&apos;m interested in mentorship opportunities
                     </span>
                   </label>
                 </div>
@@ -1950,7 +1960,7 @@ const CareerProfileForm: React.FC<CareerProfileFormProps> = ({ onClose }) => {
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
-                          profileVisibility: e.target.value as any,
+                          profileVisibility: e.target.value as ProfileVisibility,
                         }))
                       }
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"

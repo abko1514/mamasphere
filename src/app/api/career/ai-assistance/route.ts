@@ -1,63 +1,45 @@
-// pages/api/career/ai-insights.ts
-import { NextApiRequest, NextApiResponse } from "next";
+// app/api/career/ai-assistance/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/dbConnect";
-import { AICareerInsight, UserProfile } from "@/models/Career";
-import {  Collection } from "mongodb";
+import { Collection } from "mongodb";
 import { ObjectId } from "mongodb";
 
 interface DatabaseConnection {
   collection: (name: string) => Collection;
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
-  }
+interface UserProfile {
+  _id?: ObjectId | string;
+  skillsAndExperience?: string[];
+  yearsOfExperience?: number;
+  educationLevel?: string;
+  availabilityStatus?: string;
+  industry?: string;
+  [key: string]: string | number | boolean | undefined | string[] | Date | ObjectId;
+}
 
-  try {
-    const db = (await dbConnect() as unknown) as DatabaseConnection;
-    if (!db) {
-      return res.status(500).json({ message: "Database connection failed" });
-    }
-    const { userId } = req.body;
-
-    // Fetch user profile
-    // Convert userId to ObjectId
-    // const { ObjectId } = require("mongodb");
-    const userObjectId = typeof userId === "string" ? new ObjectId(userId) : userId;
-    const user = (await db
-      .collection("users")
-      .findOne({ _id: userObjectId })) as UserProfile | null;
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Generate AI insights based on user profile
-    const insights = await generateAIInsights(user);
-
-    // Save insights to database
-    const aiInsight = {
-      _id: new ObjectId(),
-      userId,
-      insights: {
-        ...insights,
-        nextUpdateDue: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        personalizedTips: await generatePersonalizedTips(user),
-      },
-      generatedAt: new Date(),
-      nextUpdateDue: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+interface AICareerInsight {
+  _id?: ObjectId | string;
+  userId: ObjectId | string;
+  insights: {
+    strengthsAnalysis: string[];
+    improvementAreas: string[];
+    careerPathSuggestions: string[];
+    skillGapAnalysis: string[];
+    marketTrends: string[];
+    salaryInsights: {
+      currentMarketRate: string;
+      growthPotential: string;
+      recommendations: string[];
     };
-
-    await db.collection("aiCareerInsights").insertOne(aiInsight);
-
-    res.status(200).json(aiInsight);
-  } catch (error) {
-    console.error("Error generating AI insights:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
+    workLifeBalanceRecommendations: string[];
+    networkingOpportunities: string[];
+    personalizedAdvice: string[];
+    nextUpdateDue: Date;
+    personalizedTips: PersonalizedTip[];
+  };
+  generatedAt: Date;
+  nextUpdateDue: Date;
 }
 
 interface AIInsights {
@@ -76,8 +58,189 @@ interface AIInsights {
   personalizedAdvice: string[];
 }
 
+interface PersonalizedTip {
+  _id: string;
+  title: string;
+  content: string;
+  category:
+    | "maternity_leave"
+    | "returning_to_work"
+    | "career_growth"
+    | "work_life_balance"
+    | "networking"
+    | "skills_development";
+  targetAudience: string[];
+  isPersonalized: boolean;
+  createdAt: Date;
+  tags: string[];
+  aiGenerated: boolean;
+  relevanceScore: number;
+}
+
+interface CareerTipDocument {
+  _id?: ObjectId | string;
+  title?: string;
+  content?: string;
+  category?: PersonalizedTip["category"];
+  targetAudience?: string[];
+  isPersonalized?: boolean;
+  createdAt?: Date | string;
+  tags?: string[];
+  aiGenerated?: boolean;
+  relevanceScore?: number;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { userId } = body;
+
+    if (!userId) {
+      return NextResponse.json(
+        { message: "User ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const db = (await dbConnect()) as unknown as DatabaseConnection;
+    if (!db) {
+      return NextResponse.json(
+        { message: "Database connection failed" },
+        { status: 500 }
+      );
+    }
+
+    const userObjectId =
+      typeof userId === "string" ? new ObjectId(userId) : userId;
+    const user = (await db
+      .collection("users")
+      .findOne({ _id: userObjectId })) as UserProfile | null;
+
+    if (!user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
+    const insights = await generateAIInsights(user);
+
+    const aiInsight = {
+      _id: new ObjectId(),
+      userId,
+      insights: {
+        ...insights,
+        nextUpdateDue: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        personalizedTips: await generatePersonalizedTips(user),
+      },
+      generatedAt: new Date(),
+      nextUpdateDue: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    };
+
+    await db.collection("aiCareerInsights").insertOne(aiInsight);
+
+    return NextResponse.json(aiInsight);
+  } catch (error) {
+    console.error("Error generating AI insights:", error);
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+
+    if (!userId) {
+      return NextResponse.json(
+        { message: "User ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const db = (await dbConnect()) as unknown as DatabaseConnection;
+    if (!db) {
+      return NextResponse.json(
+        { message: "Database connection failed" },
+        { status: 500 }
+      );
+    }
+
+    const userObjectId =
+      typeof userId === "string" ? new ObjectId(userId) : userId;
+    const user = (await db
+      .collection("users")
+      .findOne({ _id: userObjectId })) as UserProfile | null;
+
+    if (!user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
+    const aiInsights = (await db
+      .collection("aiCareerInsights")
+      .findOne(
+        { userId },
+        { sort: { generatedAt: -1 } }
+      )) as AICareerInsight | null;
+
+    let tips: PersonalizedTip[] = [];
+    if (
+      aiInsights &&
+      aiInsights.insights &&
+      Array.isArray(aiInsights.insights.personalizedTips)
+    ) {
+      tips = (aiInsights.insights.personalizedTips as PersonalizedTip[]).map(
+        (tip) => ({
+          ...tip,
+          relevanceScore:
+            typeof tip.relevanceScore === "number" ? tip.relevanceScore : 0,
+        })
+      );
+    }
+
+    const generalTipsRaw = await db
+      .collection("careerTips")
+      .find({
+        $or: [
+          { targetAudience: { $in: [user.availabilityStatus, user.industry] } },
+          { targetAudience: "all" },
+        ],
+      })
+      .sort({ relevanceScore: -1 })
+      .limit(5)
+      .toArray();
+
+    const generalTips: PersonalizedTip[] = (
+      generalTipsRaw as CareerTipDocument[]
+    ).map((tip) => ({
+      _id: tip._id ? tip._id.toString() : "",
+      title: tip.title ?? "",
+      content: tip.content ?? "",
+      category: tip.category ?? "career_growth",
+      targetAudience: Array.isArray(tip.targetAudience)
+        ? tip.targetAudience
+        : [],
+      isPersonalized: tip.isPersonalized ?? false,
+      createdAt: tip.createdAt ? new Date(tip.createdAt) : new Date(),
+      tags: Array.isArray(tip.tags) ? tip.tags : [],
+      aiGenerated: tip.aiGenerated ?? false,
+      relevanceScore:
+        typeof tip.relevanceScore === "number" ? tip.relevanceScore : 0,
+    }));
+
+    const allTips = [...tips, ...generalTips];
+
+    return NextResponse.json(allTips);
+  } catch (error) {
+    console.error("Error fetching tips:", error);
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
 async function generateAIInsights(user: UserProfile): Promise<AIInsights> {
-  // This would integrate with an AI service like OpenAI, but for now we'll use rule-based logic
   const insights: AIInsights = {
     strengthsAnalysis: [],
     improvementAreas: [],
@@ -156,19 +319,6 @@ async function generateAIInsights(user: UserProfile): Promise<AIInsights> {
   return insights;
 }
 
-interface PersonalizedTip {
-  _id: string;
-  title: string;
-  content: string;
-  category: "maternity_leave" | "returning_to_work" | "career_growth" | "work_life_balance" | "networking" | "skills_development";
-  targetAudience: string[];
-  isPersonalized: boolean;
-  createdAt: Date;
-  tags: string[];
-  aiGenerated: boolean;
-  relevanceScore: number;
-}
-
 async function generatePersonalizedTips(
   user: UserProfile
 ): Promise<PersonalizedTip[]> {
@@ -207,101 +357,4 @@ async function generatePersonalizedTips(
   }
 
   return tips;
-}
-
-// pages/api/career/tips.ts
-export async function getTipsHandler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ message: "Method not allowed" });
-  }
-
-  try {
-    const db = (await dbConnect() as unknown) as DatabaseConnection;
-    const { userId } = req.query;
-
-    // Get user profile to personalize tips
-    if (db == null) {
-      return res.status(500).json({ message: "Database connection failed" });
-    }
-    // const { ObjectId } = require("mongodb");
-    const userObjectId =
-      typeof userId === "string" ? new ObjectId(userId) : userId;
-    const user = (await db
-      .collection("users")
-      .findOne({ _id: userObjectId })) as UserProfile | null;
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Fetch personalized tips from AI insights
-    const aiInsights = (await db
-      .collection("aiCareerInsights")
-      .findOne(
-        { userId },
-        { sort: { generatedAt: -1 } }
-      )) as AICareerInsight | null;
-
-    let tips: PersonalizedTip[] = [];
-    if (aiInsights && aiInsights.insights && Array.isArray(aiInsights.insights.personalizedTips)) {
-      tips = (aiInsights.insights.personalizedTips as PersonalizedTip[]).map((tip) => ({
-        ...tip,
-        relevanceScore: typeof tip.relevanceScore === "number" ? tip.relevanceScore : 0,
-      }));
-    }
-    // Ensure type safety for personalized tips
-    tips = aiInsights && aiInsights.insights && Array.isArray(aiInsights.insights.personalizedTips)
-      ? (aiInsights.insights.personalizedTips as PersonalizedTip[]).map((tip) => ({
-        ...tip,
-        relevanceScore: typeof tip.relevanceScore === "number" ? tip.relevanceScore : 0,
-      }))
-      : [];
-    // Also fetch general tips that match user's profile
-    const generalTipsRaw = await db
-      .collection("careerTips")
-      .find({
-        $or: [
-          { targetAudience: { $in: [user.availabilityStatus, user.industry] } },
-          { targetAudience: "all" },
-        ],
-      })
-      .sort({ relevanceScore: -1 })
-      .limit(5)
-      .toArray();
-
-    interface CareerTipDocument {
-      _id?: ObjectId | string;
-      title?: string;
-      content?: string;
-      category?: PersonalizedTip["category"];
-      targetAudience?: string[];
-      isPersonalized?: boolean;
-      createdAt?: Date | string;
-      tags?: string[];
-      aiGenerated?: boolean;
-      relevanceScore?: number;
-    }
-    
-    const generalTips: PersonalizedTip[] = (generalTipsRaw as CareerTipDocument[]).map((tip) => ({
-      _id: tip._id ? tip._id.toString() : "",
-      title: tip.title ?? "",
-      content: tip.content ?? "",
-      category: tip.category ?? "career_growth",
-      targetAudience: Array.isArray(tip.targetAudience) ? tip.targetAudience : [],
-      isPersonalized: tip.isPersonalized ?? false,
-      createdAt: tip.createdAt ? new Date(tip.createdAt) : new Date(),
-      tags: Array.isArray(tip.tags) ? tip.tags : [],
-      aiGenerated: tip.aiGenerated ?? false,
-      relevanceScore: typeof tip.relevanceScore === "number" ? tip.relevanceScore : 0,
-    }));
-
-    tips = [...tips, ...generalTips];
-
-    res.status(200).json(tips);
-  } catch (error) {
-    console.error("Error fetching tips:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
 }

@@ -1,27 +1,25 @@
-import { dbConnect } from '@/lib/dbConnect';
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { dbConnect } from "@/lib/dbConnect";
+import { NextRequest, NextResponse } from "next/server";
+import { MongoClient, ObjectId } from "mongodb";
 
-export async function saveApplicationHandler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
-  }
-
+export async function POST(req: NextRequest) {
   try {
     await dbConnect();
-    const { MongoClient } = await import('mongodb');
+
+    const body = await req.json();
+    const { jobId, userId } = body;
+
+    if (!jobId || !userId) {
+      return NextResponse.json(
+        { message: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
     const client = new MongoClient(process.env.MONGODB_URI!);
     await client.connect();
     const db = client.db();
-    const { jobId, userId } = req.body;
 
-    if (!jobId || !userId) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    const { ObjectId } = await import('mongodb');
     const application = {
       _id: new ObjectId(),
       jobId,
@@ -31,10 +29,30 @@ export async function saveApplicationHandler(
     };
 
     await db.collection("jobApplications").insertOne(application);
+    await client.close();
 
-    res.status(201).json({ message: "Application saved successfully" });
+    return NextResponse.json(
+      { message: "Application saved successfully" },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error saving application:", error);
-    res.status(500).json({ message: "Internal server error" });
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
+}
+
+// Add other HTTP methods if needed
+export async function GET() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
+}
+
+export async function PUT() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
+}
+
+export async function DELETE() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
 }

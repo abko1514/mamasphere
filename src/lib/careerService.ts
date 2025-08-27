@@ -1,5 +1,126 @@
 // lib/careerService.ts
-// import UserProfile from "@/models/UserProfile";
+
+// Define an interface for the application data
+interface JobApplicationData {
+  resume?: string; // File path or base64 encoded resume
+  coverLetter?: string;
+  answers?: Record<string, string>; // For job-specific questions
+  // Add other relevant fields as needed
+  [key: string]: unknown; // For any additional dynamic fields
+}
+
+// Define interfaces for user profile data
+export interface UserProfile {
+  _id: string;
+  userId: string;
+  personalInfo: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    location: string;
+    timeZone: string;
+    profilePicture?: string;
+  };
+  professionalInfo: {
+    title: string;
+    summary: string;
+    skills: string[];
+    experience: WorkExperience[];
+    education: Education[];
+    certifications: Certification[];
+    resume?: string;
+    portfolio?: string;
+  };
+  careerPreferences: {
+    desiredRoles: string[];
+    industries: string[];
+    workArrangements: ("remote" | "hybrid" | "onsite" | "flexible")[];
+    locationPreferences: string[];
+    salaryExpectations: {
+      min: number;
+      max: number;
+      currency: string;
+    };
+    willingnessToRelocate: boolean;
+    willingnessToTravel: string; // "none", "some", "extensive"
+  };
+  workLifeBalance: {
+    hoursAvailability: string; // "full-time", "part-time", "flexible"
+    childcareSupportNeeded: boolean;
+    preferredSchedule: {
+      startTime: string;
+      endTime: string;
+      timeZone: string;
+    };
+    timeOffRequirements: string[];
+  };
+  jobSearchStatus: {
+    activelyLooking: boolean;
+    startDate: string; // "immediately", "1-2 weeks", "1-3 months", "flexible"
+    opennessToOpportunities: boolean;
+    visibility: "active" | "passive" | "not-looking";
+  };
+  networkingPreferences: {
+    interestedInMentoring: boolean;
+    seekingMentorship: boolean;
+    collaborationInterest: boolean;
+    networkingFrequency: "regularly" | "occasionally" | "rarely";
+  };
+  privacySettings: {
+    profileVisibility: "public" | "connections-only" | "private";
+    resumeVisibility: "public" | "connections-only" | "private";
+    contactInfoVisibility: "public" | "connections-only" | "private";
+  };
+  achievements: Achievement[];
+  createdAt: Date;
+  updatedAt: Date;
+  completenessScore: number;
+  lastActive: Date;
+}
+
+export interface WorkExperience {
+  _id: string;
+  company: string;
+  title: string;
+  location: string;
+  startDate: Date;
+  endDate?: Date;
+  current: boolean;
+  description: string;
+  skills: string[];
+  achievements: string[];
+}
+
+export interface Education {
+  _id: string;
+  institution: string;
+  degree: string;
+  fieldOfStudy: string;
+  startDate: Date;
+  endDate?: Date;
+  current: boolean;
+  description?: string;
+}
+
+export interface Certification {
+  _id: string;
+  name: string;
+  issuingOrganization: string;
+  issueDate: Date;
+  expirationDate?: Date;
+  credentialID?: string;
+  credentialURL?: string;
+}
+
+export interface Achievement {
+  _id: string;
+  title: string;
+  date: Date;
+  description: string;
+  category: string;
+  link?: string;
+}
 
 export interface CareerTip {
   _id: string;
@@ -157,11 +278,136 @@ export interface AICareerInsight {
   lastUpdated: Date;
 }
 
+export interface UserAnalytics {
+  userId: string;
+  profileCompleteness: number;
+  jobApplications: {
+    total: number;
+    pending: number;
+    interviews: number;
+    offers: number;
+    rejected: number;
+  };
+  skillAssessments: {
+    completed: number;
+    averageScore: number;
+    topSkills: { skill: string; score: number }[];
+  };
+  networking: {
+    connections: number;
+    messagesSent: number;
+    meetingsScheduled: number;
+  };
+  learningProgress: {
+    coursesCompleted: number;
+    hoursSpent: number;
+    certificatesEarned: number;
+  };
+  engagement: {
+    logins: number;
+    timeSpent: number; // in minutes
+    lastActive: Date;
+  };
+  recommendations: {
+    jobsApplied: number;
+    jobsSaved: number;
+    businessesContacted: number;
+  };
+  timeline: AnalyticsEvent[];
+  weeklySummary: WeeklySummary[];
+}
+
+export interface AnalyticsEvent {
+  type:
+    | "job_application"
+    | "skill_assessment"
+    | "networking"
+    | "learning"
+    | "profile_update";
+  title: string;
+  description: string;
+  timestamp: Date;
+  metadata?: Record<string, unknown>;
+}
+
+export interface WeeklySummary {
+  week: string; // ISO week format
+  applications: number;
+  learningHours: number;
+  networkingActivities: number;
+  skillImprovements: number;
+}
+
 class CareerService {
   private baseUrl: string;
 
   constructor() {
     this.baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  }
+
+  // Get user profile
+  async getUserProfile(userId: string): Promise<UserProfile | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/profile/${userId}`);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error("Failed to fetch user profile");
+      }
+
+      const data = await response.json();
+      return data.profile || null;
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      return null;
+    }
+  }
+
+  // Update user profile
+  async updateUserProfile(
+    userId: string,
+    updates: Partial<UserProfile>
+  ): Promise<UserProfile | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/profile/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update user profile");
+      }
+
+      const data = await response.json();
+      return data.profile || null;
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      return null;
+    }
+  }
+
+  // Get user analytics
+  async getUserAnalytics(userId: string): Promise<UserAnalytics> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/api/analytics/users/${userId}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch user analytics");
+      }
+
+      const data = await response.json();
+      return data.analytics || this.getMockAnalytics(userId);
+    } catch (error) {
+      console.error("Error fetching user analytics:", error);
+      return this.getMockAnalytics(userId);
+    }
   }
 
   // Get personalized career tips based on user profile
@@ -219,11 +465,12 @@ class CareerService {
       const queryParams = new URLSearchParams({
         userId,
         limit: limit.toString(),
-        ...(filters && Object.fromEntries(
-          Object.entries(filters)
-            .filter(([ value]) => value !== undefined)
-            .map(([key, value]) => [key, value.toString()])
-        )),
+        ...(filters &&
+          Object.fromEntries(
+            Object.entries(filters)
+              .filter(([value]) => value !== undefined)
+              .map(([key, value]) => [key, value!.toString()])
+          )),
       });
 
       const response = await fetch(
@@ -280,11 +527,12 @@ class CareerService {
     try {
       const queryParams = new URLSearchParams({
         limit: limit.toString(),
-        ...(filters && Object.fromEntries(
-          Object.entries(filters)
-            .filter(([ value]) => value !== undefined)
-            .map(([key, value]) => [key, value.toString()])
-        )),
+        ...(filters &&
+          Object.fromEntries(
+            Object.entries(filters)
+              .filter(([value]) => value !== undefined)
+              .map(([key, value]) => [key, value!.toString()])
+          )),
       });
 
       const response = await fetch(
@@ -312,7 +560,7 @@ class CareerService {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ forceRegenerate }),
+        body: JSON.stringify({ userId, forceRegenerate }),
       });
 
       if (!response.ok) {
@@ -350,7 +598,7 @@ class CareerService {
   async applyToJob(
     userId: string,
     jobId: string,
-    applicationData: Record<string, any>
+    applicationData: JobApplicationData
   ): Promise<boolean> {
     try {
       const response = await fetch(
@@ -392,6 +640,156 @@ class CareerService {
       console.error("Error contacting business:", error);
       return false;
     }
+  }
+
+  // Track user activity
+  async trackUserActivity(
+    userId: string,
+    activityType: string,
+    metadata?: Record<string, unknown>
+  ): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/analytics/track`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId,
+          activityType,
+          metadata,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error("Error tracking user activity:", error);
+      return false;
+    }
+  }
+
+  // Mock analytics data for development/fallback
+  private getMockAnalytics(userId: string): UserAnalytics {
+    const now = new Date();
+    // const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    return {
+      userId,
+      profileCompleteness: 85,
+      jobApplications: {
+        total: 24,
+        pending: 8,
+        interviews: 6,
+        offers: 2,
+        rejected: 8,
+      },
+      skillAssessments: {
+        completed: 12,
+        averageScore: 82,
+        topSkills: [
+          { skill: "Digital Marketing", score: 92 },
+          { skill: "Content Strategy", score: 88 },
+          { skill: "Analytics", score: 85 },
+          { skill: "Team Leadership", score: 90 },
+          { skill: "Project Management", score: 87 },
+        ],
+      },
+      networking: {
+        connections: 45,
+        messagesSent: 28,
+        meetingsScheduled: 6,
+      },
+      learningProgress: {
+        coursesCompleted: 3,
+        hoursSpent: 24,
+        certificatesEarned: 2,
+      },
+      engagement: {
+        logins: 42,
+        timeSpent: 380,
+        lastActive: now,
+      },
+      recommendations: {
+        jobsApplied: 8,
+        jobsSaved: 16,
+        businessesContacted: 3,
+      },
+      timeline: [
+        {
+          type: "job_application",
+          title: "Applied to Senior Marketing Manager",
+          description: "Applied to remote position at TechForGood Inc.",
+          timestamp: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
+          metadata: { company: "TechForGood Inc.", status: "pending" },
+        },
+        {
+          type: "skill_assessment",
+          title: "Completed Digital Marketing Assessment",
+          description: "Scored 92% on advanced digital marketing skills",
+          timestamp: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
+          metadata: { score: 92, category: "Digital Marketing" },
+        },
+        {
+          type: "networking",
+          title: "Connected with Industry Professional",
+          description:
+            "Had coffee chat with marketing director at Sustainable Solutions",
+          timestamp: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+          metadata: {
+            connection: "Jessica Rodriguez",
+            company: "Sustainable Solutions",
+          },
+        },
+        {
+          type: "learning",
+          title: "Completed Marketing Automation Course",
+          description: "Finished 8-hour course on HubSpot automation",
+          timestamp: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+          metadata: {
+            course: "HubSpot Automation Mastery",
+            duration: "8 hours",
+          },
+        },
+        {
+          type: "profile_update",
+          title: "Updated Professional Summary",
+          description: "Enhanced profile with recent achievements and skills",
+          timestamp: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
+          metadata: { sectionsUpdated: ["summary", "skills"] },
+        },
+      ],
+      weeklySummary: [
+        {
+          week: "2024-W03",
+          applications: 6,
+          learningHours: 8,
+          networkingActivities: 3,
+          skillImprovements: 2,
+        },
+        {
+          week: "2024-W02",
+          applications: 5,
+          learningHours: 6,
+          networkingActivities: 2,
+          skillImprovements: 1,
+        },
+        {
+          week: "2024-W01",
+          applications: 4,
+          learningHours: 5,
+          networkingActivities: 1,
+          skillImprovements: 1,
+        },
+        {
+          week: "2023-W52",
+          applications: 3,
+          learningHours: 5,
+          networkingActivities: 0,
+          skillImprovements: 0,
+        },
+      ],
+    };
   }
 
   // Mock data methods for development/fallback

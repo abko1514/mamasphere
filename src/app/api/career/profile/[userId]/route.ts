@@ -1,48 +1,68 @@
-//api/career/profile/[userId].ts;
-import type { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 import { careerService } from "@/lib/careerService";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { userId: string } }
 ) {
-  const { userId } = req.query;
-
-  if (typeof userId !== "string") {
-    return res.status(400).json({ message: "Invalid user ID" });
-  }
-
   try {
-    switch (req.method) {
-      case "GET":
-        const profile = await careerService.getUserProfile(userId);
-        if (!profile) {
-          return res.status(404).json({ message: "Profile not found" });
-        }
-        return res.status(200).json(profile);
+    const { userId } = params;
+    const profile = await careerService.getUserProfile(userId);
 
-      case "PUT":
-        const updatedProfile = await careerService.updateUserProfile(
-          userId,
-          req.body
-        );
-        if (!updatedProfile) {
-          return res.status(500).json({ message: "Failed to update profile" });
-        }
-
-        // Track profile update activity
-        await careerService.trackUserActivity(userId, "profile_updated", {
-          fieldsUpdated: Object.keys(req.body),
-        });
-
-        return res.status(200).json(updatedProfile);
-
-      default:
-        res.setHeader("Allow", ["GET", "PUT"]);
-        return res.status(405).json({ message: "Method not allowed" });
+    if (!profile) {
+      return NextResponse.json(
+        { message: "Profile not found" },
+        { status: 404 }
+      );
     }
+
+    return NextResponse.json(profile);
   } catch (error) {
-    console.error("Error in user profile handler:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error("Error fetching user profile:", error);
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { userId: string } }
+) {
+  try {
+    const { userId } = params;
+    const body = await request.json();
+
+    const updatedProfile = await careerService.updateUserProfile(userId, body);
+
+    if (!updatedProfile) {
+      return NextResponse.json(
+        { message: "Failed to update profile" },
+        { status: 500 }
+      );
+    }
+
+    // Track profile update activity
+    await careerService.trackUserActivity(userId, "profile_updated", {
+      fieldsUpdated: Object.keys(body),
+    });
+
+    return NextResponse.json(updatedProfile);
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+// Optional: Add other HTTP methods if needed
+export async function POST() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
+}
+
+export async function DELETE() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
 }

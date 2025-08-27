@@ -2,6 +2,93 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 
+// Define proper interfaces for type safety
+export interface CareerProfile {
+  id: string;
+  userId: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  location: string;
+  industry: string;
+  yearsOfExperience: number;
+  skills: string[];
+  education: EducationItem[];
+  workExperience: WorkExperienceItem[];
+  certifications: CertificationItem[];
+  languages: LanguageItem[];
+  desiredSalaryRange?: {
+    min: number;
+    max: number;
+    currency: string;
+  };
+  workPreferences: {
+    remote: boolean;
+    hybrid: boolean;
+    onSite: boolean;
+    partTime: boolean;
+    fullTime: boolean;
+    contract: boolean;
+  };
+  availability: {
+    startDate: Date;
+    hoursPerWeek: number;
+  };
+  personalInfo?: {
+    maritalStatus?: string;
+    hasChildren?: boolean;
+    childrenAges?: number[];
+    disabilities?: string[];
+  };
+  bio?: string;
+  portfolioUrl?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  websiteUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface EducationItem {
+  id: string;
+  institution: string;
+  degree: string;
+  field: string;
+  startDate: Date;
+  endDate?: Date;
+  current: boolean;
+  gpa?: number;
+  achievements?: string[];
+}
+
+export interface WorkExperienceItem {
+  id: string;
+  company: string;
+  position: string;
+  startDate: Date;
+  endDate?: Date;
+  current: boolean;
+  description: string;
+  achievements: string[];
+  skills: string[];
+}
+
+export interface CertificationItem {
+  id: string;
+  name: string;
+  issuer: string;
+  dateObtained: Date;
+  expiryDate?: Date;
+  credentialId?: string;
+  url?: string;
+}
+
+export interface LanguageItem {
+  id: string;
+  language: string;
+  proficiency: "Basic" | "Conversational" | "Fluent" | "Native";
+}
+
 export interface ProfileStats {
   profileCompletion: number;
   availableJobs: number;
@@ -11,23 +98,143 @@ export interface ProfileStats {
   memberSince: Date;
 }
 
+export interface AIInsights {
+  id: string;
+  profileStrengths: string[];
+  improvementSuggestions: string[];
+  careerRecommendations: string[];
+  skillGaps: string[];
+  marketDemand: {
+    score: number;
+    explanation: string;
+  };
+  salaryInsights: {
+    suggestedRange: {
+      min: number;
+      max: number;
+      currency: string;
+    };
+    marketComparison: string;
+  };
+  generatedAt: Date;
+}
+
+export interface JobRecommendation {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  salary?: {
+    min: number;
+    max: number;
+    currency: string;
+  };
+  type: "full-time" | "part-time" | "contract" | "freelance";
+  remote: boolean;
+  description: string;
+  requirements: string[];
+  skills: string[];
+  matchScore: number;
+  postedDate: Date;
+  applicationDeadline?: Date;
+  url?: string;
+}
+
+export interface FreelanceOpportunity {
+  id: string;
+  title: string;
+  client: string;
+  budget: {
+    min: number;
+    max: number;
+    currency: string;
+    type: "fixed" | "hourly";
+  };
+  duration: string;
+  description: string;
+  skills: string[];
+  experience: string;
+  remote: boolean;
+  matchScore: number;
+  postedDate: Date;
+  proposalDeadline?: Date;
+  url?: string;
+}
+
+export interface BusinessOpportunity {
+  id: string;
+  name: string;
+  industry: string;
+  type: "startup" | "franchise" | "partnership" | "acquisition";
+  investment: {
+    min: number;
+    max: number;
+    currency: string;
+  };
+  description: string;
+  requirements: string[];
+  location: string;
+  remote: boolean;
+  roi: {
+    estimated: number;
+    timeframe: string;
+  };
+  riskLevel: "low" | "medium" | "high";
+  matchScore: number;
+  contactInfo: {
+    name: string;
+    email: string;
+    phone?: string;
+  };
+  listedDate: Date;
+}
+
+export interface CareerTip {
+  id: string;
+  title: string;
+  category:
+    | "resume"
+    | "interview"
+    | "networking"
+    | "skills"
+    | "career-change"
+    | "salary";
+  content: string;
+  tags: string[];
+  readTime: number;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  createdAt: Date;
+}
+
+export interface JobApplication {
+  jobId: string;
+  coverLetter: string;
+  resume?: File;
+  additionalDocuments?: File[];
+  expectedSalary?: number;
+  startDate?: Date;
+  message?: string;
+}
+
 export interface UseCareerProfileReturn {
-  profile: any | null;
+  profile: CareerProfile | null;
   stats: ProfileStats | null;
   loading: boolean;
   error: string | null;
   hasProfile: boolean;
   completionPercentage: number;
   refreshProfile: () => Promise<void>;
-  updateProfile: (data: Partial<any>) => Promise<boolean>;
-  createProfile: (data: any) => Promise<boolean>;
+  updateProfile: (data: Partial<CareerProfile>) => Promise<boolean>;
+  createProfile: (
+    data: Omit<CareerProfile, "id" | "userId" | "createdAt" | "updatedAt">
+  ) => Promise<boolean>;
   deleteProfile: () => Promise<boolean>;
   exportProfile: () => Promise<void>;
 }
 
 export function useCareerProfile(): UseCareerProfileReturn {
   const { data: session, status } = useSession();
-  const [profile, setProfile] = useState<any | null>(null);
+  const [profile, setProfile] = useState<CareerProfile | null>(null);
   const [stats, setStats] = useState<ProfileStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +295,7 @@ export function useCareerProfile(): UseCareerProfileReturn {
 
   // Update profile
   const updateProfile = useCallback(
-    async (data: Partial<any>): Promise<boolean> => {
+    async (data: Partial<CareerProfile>): Promise<boolean> => {
       if (!session?.user?.email) {
         setError("User not authenticated");
         return false;
@@ -133,7 +340,9 @@ export function useCareerProfile(): UseCareerProfileReturn {
 
   // Create profile
   const createProfile = useCallback(
-    async (data: any): Promise<boolean> => {
+    async (
+      data: Omit<CareerProfile, "id" | "userId" | "createdAt" | "updatedAt">
+    ): Promise<boolean> => {
       if (!session?.user?.email) {
         setError("User not authenticated");
         return false;
@@ -279,7 +488,7 @@ export function useCareerProfile(): UseCareerProfileReturn {
 
 // Additional hook for AI insights
 export function useAIInsights() {
-  const [insights, setInsights] = useState(null);
+  const [insights, setInsights] = useState<AIInsights | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { data: session } = useSession();
@@ -334,10 +543,10 @@ export function useAIInsights() {
 
 // Hook for career data (jobs, tips, etc.)
 export function useCareerData() {
-  const [tips, setTips] = useState([]);
-  const [jobs, setJobs] = useState([]);
-  const [freelanceOps, setFreelanceOps] = useState([]);
-  const [businesses, setBusinesses] = useState([]);
+  const [tips, setTips] = useState<CareerTip[]>([]);
+  const [jobs, setJobs] = useState<JobRecommendation[]>([]);
+  const [freelanceOps, setFreelanceOps] = useState<FreelanceOpportunity[]>([]);
+  const [businesses, setBusinesses] = useState<BusinessOpportunity[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -363,92 +572,101 @@ export function useCareerData() {
     }
   }, []);
 
-  const fetchJobs = useCallback(async (filters = {}, limit = 20) => {
-    try {
-      setLoading(true);
-      setError(null);
+  const fetchJobs = useCallback(
+    async (filters: Record<string, string> = {}, limit = 20) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      const queryParams = new URLSearchParams({
-        limit: limit.toString(),
-        ...filters,
-      });
+        const queryParams = new URLSearchParams({
+          limit: limit.toString(),
+          ...filters,
+        });
 
-      const response = await fetch(`/api/career/jobs?${queryParams}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch job recommendations");
+        const response = await fetch(`/api/career/jobs?${queryParams}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch job recommendations");
+        }
+
+        const data = await response.json();
+        setJobs(data.jobs || []);
+        return data.jobs;
+      } catch (err) {
+        console.error("Error fetching jobs:", err);
+        setError(err instanceof Error ? err.message : "Failed to fetch jobs");
+        return [];
+      } finally {
+        setLoading(false);
       }
+    },
+    []
+  );
 
-      const data = await response.json();
-      setJobs(data.jobs || []);
-      return data.jobs;
-    } catch (err) {
-      console.error("Error fetching jobs:", err);
-      setError(err instanceof Error ? err.message : "Failed to fetch jobs");
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchFreelanceOps = useCallback(
+    async (filters: Record<string, string> = {}, limit = 15) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  const fetchFreelanceOps = useCallback(async (filters = {}, limit = 15) => {
-    try {
-      setLoading(true);
-      setError(null);
+        const queryParams = new URLSearchParams({
+          limit: limit.toString(),
+          ...filters,
+        });
 
-      const queryParams = new URLSearchParams({
-        limit: limit.toString(),
-        ...filters,
-      });
+        const response = await fetch(`/api/career/freelance?${queryParams}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch freelance opportunities");
+        }
 
-      const response = await fetch(`/api/career/freelance?${queryParams}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch freelance opportunities");
+        const data = await response.json();
+        setFreelanceOps(data.opportunities || []);
+        return data.opportunities;
+      } catch (err) {
+        console.error("Error fetching freelance opportunities:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to fetch freelance opportunities"
+        );
+        return [];
+      } finally {
+        setLoading(false);
       }
+    },
+    []
+  );
 
-      const data = await response.json();
-      setFreelanceOps(data.opportunities || []);
-      return data.opportunities;
-    } catch (err) {
-      console.error("Error fetching freelance opportunities:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to fetch freelance opportunities"
-      );
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchBusinesses = useCallback(
+    async (filters: Record<string, string> = {}, limit = 25) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  const fetchBusinesses = useCallback(async (filters = {}, limit = 25) => {
-    try {
-      setLoading(true);
-      setError(null);
+        const queryParams = new URLSearchParams({
+          limit: limit.toString(),
+          ...filters,
+        });
 
-      const queryParams = new URLSearchParams({
-        limit: limit.toString(),
-        ...filters,
-      });
+        const response = await fetch(`/api/career/businesses?${queryParams}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch businesses");
+        }
 
-      const response = await fetch(`/api/career/businesses?${queryParams}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch businesses");
+        const data = await response.json();
+        setBusinesses(data.businesses || []);
+        return data.businesses;
+      } catch (err) {
+        console.error("Error fetching businesses:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch businesses"
+        );
+        return [];
+      } finally {
+        setLoading(false);
       }
-
-      const data = await response.json();
-      setBusinesses(data.businesses || []);
-      return data.businesses;
-    } catch (err) {
-      console.error("Error fetching businesses:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch businesses"
-      );
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   const saveJob = useCallback(async (jobId: string) => {
     try {
@@ -472,7 +690,7 @@ export function useCareerData() {
   }, []);
 
   const applyToJob = useCallback(
-    async (jobId: string, applicationData: any) => {
+    async (jobId: string, applicationData: JobApplication) => {
       try {
         const response = await fetch(`/api/career/jobs/${jobId}/apply`, {
           method: "POST",
@@ -544,24 +762,24 @@ export function useCareerData() {
 }
 
 // Hook for profile form management
-export function useProfileForm(initialData: any = {}) {
-  const [formData, setFormData] = useState(initialData);
+export function useProfileForm(initialData: Partial<CareerProfile> = {}) {
+  const [formData, setFormData] = useState<Partial<CareerProfile>>(initialData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDirty, setIsDirty] = useState(false);
 
   const updateField = useCallback(
-    (field: string, value: any) => {
-      setFormData((prev: any) => ({
+    <K extends keyof CareerProfile>(field: K, value: CareerProfile[K]) => {
+      setFormData((prev) => ({
         ...prev,
         [field]: value,
       }));
       setIsDirty(true);
 
       // Clear error for this field if it exists
-      if (errors[field]) {
+      if (errors[field as string]) {
         setErrors((prev) => {
           const newErrors = { ...prev };
-          delete newErrors[field];
+          delete newErrors[field as string];
           return newErrors;
         });
       }
@@ -569,17 +787,17 @@ export function useProfileForm(initialData: any = {}) {
     [errors]
   );
 
-  const updateNestedField = useCallback((path: string, value: any) => {
+  const updateNestedField = useCallback((path: string, value: unknown) => {
     const keys = path.split(".");
-    setFormData((prev: any) => {
+    setFormData((prev) => {
       const newData = { ...prev };
-      let current = newData;
+      let current = newData as Record<string, unknown>;
 
       for (let i = 0; i < keys.length - 1; i++) {
         if (!current[keys[i]]) {
           current[keys[i]] = {};
         }
-        current = current[keys[i]];
+        current = current[keys[i]] as Record<string, unknown>;
       }
 
       current[keys[keys.length - 1]] = value;
@@ -588,27 +806,32 @@ export function useProfileForm(initialData: any = {}) {
     setIsDirty(true);
   }, []);
 
-  const addArrayItem = useCallback((field: string, item: any) => {
-    setFormData((prev: any) => ({
+  const addArrayItem = useCallback(<T>(field: keyof CareerProfile, item: T) => {
+    setFormData((prev) => ({
       ...prev,
-      [field]: [...(prev[field] || []), item],
+      [field]: [...((prev[field] as T[]) || []), item],
     }));
     setIsDirty(true);
   }, []);
 
-  const removeArrayItem = useCallback((field: string, index: number) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      [field]: (prev[field] || []).filter((_: any, i: number) => i !== index),
-    }));
-    setIsDirty(true);
-  }, []);
+  const removeArrayItem = useCallback(
+    (field: keyof CareerProfile, index: number) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: ((prev[field] as unknown[]) || []).filter(
+          (_, i) => i !== index
+        ),
+      }));
+      setIsDirty(true);
+    },
+    []
+  );
 
   const updateArrayItem = useCallback(
-    (field: string, index: number, item: any) => {
-      setFormData((prev: any) => ({
+    <T>(field: keyof CareerProfile, index: number, item: T) => {
+      setFormData((prev) => ({
         ...prev,
-        [field]: (prev[field] || []).map((existingItem: any, i: number) =>
+        [field]: ((prev[field] as T[]) || []).map((existingItem, i) =>
           i === index ? item : existingItem
         ),
       }));
@@ -632,10 +855,8 @@ export function useProfileForm(initialData: any = {}) {
     ];
 
     requiredFields.forEach(({ field, message }) => {
-      if (
-        !formData[field] ||
-        (typeof formData[field] === "string" && !formData[field].trim())
-      ) {
+      const value = formData[field as keyof CareerProfile];
+      if (!value || (typeof value === "string" && !value.trim())) {
         newErrors[field] = message;
       }
     });
@@ -652,18 +873,20 @@ export function useProfileForm(initialData: any = {}) {
 
     // Years of experience validation
     if (formData.yearsOfExperience !== undefined) {
-      const years = parseInt(formData.yearsOfExperience);
-      if (isNaN(years) || years < 0 || years > 50) {
+      const years = formData.yearsOfExperience;
+      if (years < 0 || years > 50) {
         newErrors.yearsOfExperience =
           "Years of experience must be between 0 and 50";
       }
     }
 
     // Children ages validation
-    if (formData.childrenAges && Array.isArray(formData.childrenAges)) {
-      const invalidAges = formData.childrenAges.some((age: any) => {
-        const ageNum = parseInt(age);
-        return isNaN(ageNum) || ageNum < 0 || ageNum > 25;
+    if (
+      formData.personalInfo?.childrenAges &&
+      Array.isArray(formData.personalInfo.childrenAges)
+    ) {
+      const invalidAges = formData.personalInfo.childrenAges.some((age) => {
+        return age < 0 || age > 25;
       });
       if (invalidAges) {
         newErrors.childrenAges = "Children ages must be between 0 and 25";
@@ -673,7 +896,7 @@ export function useProfileForm(initialData: any = {}) {
     // Salary range validation
     if (formData.desiredSalaryRange) {
       const { min, max } = formData.desiredSalaryRange;
-      if (min && max && parseInt(min) > parseInt(max)) {
+      if (min && max && min > max) {
         newErrors["desiredSalaryRange.min"] =
           "Minimum salary cannot be greater than maximum salary";
       }
