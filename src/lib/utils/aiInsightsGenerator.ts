@@ -77,7 +77,7 @@ export class AIInsightsGenerator {
       );
     }
 
-    const currentYear = new Date().getFullYear();
+    // const currentYear = new Date().getFullYear();
     const digitalSkills = [
       "AI",
       "Data Analysis",

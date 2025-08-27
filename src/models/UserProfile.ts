@@ -1,8 +1,5 @@
-// models/UserProfile.js
-
-import mongoose from "mongoose";
-
-const { Schema } = mongoose;
+// models/UserProfile.ts
+import mongoose, { Document, Schema, Types } from "mongoose";
 
 // Work Experience Schema
 const workExperienceSchema = new Schema({
@@ -163,8 +160,119 @@ const salaryRangeSchema = new Schema({
   },
 });
 
+// Define the UserProfile document interface
+interface IUserProfile extends Document {
+  // Personal Information
+  name: string;
+  email: string;
+  phone?: string;
+  dateOfBirth?: Date;
+  location: string;
+  bio?: string;
+  avatar?: string;
+
+  // Pregnancy & Family Status
+  isPregnant: boolean;
+  dueDate?: Date;
+  pregnancyWeek?: number;
+  childrenAges: number[];
+  partnerName?: string;
+  familyStatus: "single" | "partnered" | "married" | "divorced" | "widowed";
+
+  // Career Information
+  currentRole?: string;
+  company?: string;
+  industry: string;
+  workExperience: (typeof workExperienceSchema)[];
+  skillsAndExperience: string[];
+  educationLevel:
+    | "high_school"
+    | "associates"
+    | "bachelors"
+    | "masters"
+    | "phd"
+    | "other";
+  educationDetails: (typeof educationSchema)[];
+
+  // Career Goals & Preferences
+  careerGoals?: string;
+  workPreference: "remote" | "hybrid" | "onsite" | "flexible";
+  availabilityStatus:
+    | "maternity_leave"
+    | "returning_to_work"
+    | "actively_working"
+    | "seeking_opportunities"
+    | "career_break";
+  desiredSalaryRange: {
+    min: number;
+    max: number;
+    currency: string;
+  };
+
+  // Professional Development
+  certifications: (typeof certificationSchema)[];
+  languages: {
+    language: string;
+    proficiency: "basic" | "intermediate" | "advanced" | "native";
+  }[];
+  portfolioUrl?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+
+  // Community & Social
+  interests: string[];
+  supportGroups: string[];
+  mentorStatus: "seeking" | "offering" | "both" | "none";
+
+  // Preferences & Settings
+  jobAlerts: boolean;
+  newsletter: boolean;
+  communityUpdates: boolean;
+  mentorshipInterested: boolean;
+
+  // Privacy Settings
+  profileVisibility: "public" | "community" | "private";
+  showContactInfo: boolean;
+  allowMessages: boolean;
+
+  // Career Support Specific
+  yearsOfExperience: number;
+  careerBreakDuration: number;
+  returnToWorkDate?: Date;
+  flexibilityNeeds: string[];
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  lastLoginAt?: Date;
+
+  // Virtuals
+  completenessPercentage?: number;
+
+  // Methods
+  getProfileSummary(): {
+    id: string;
+    name: string;
+    email: string;
+    currentRole?: string;
+    company?: string;
+    industry: string;
+    yearsOfExperience: number;
+    location: string;
+    workPreference: string;
+    availabilityStatus: string;
+    skillsAndExperience: string[];
+    completenessPercentage?: number;
+    isPregnant: boolean;
+    childrenCount: number;
+    profileVisibility: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+}
+
 // Main UserProfile Schema
-const userProfileSchema = new Schema({
+const userProfileSchema = new Schema<IUserProfile>({
   // Personal Information
   name: {
     type: String,
@@ -417,71 +525,72 @@ userProfileSchema.pre(
 );
 
 // Virtual for profile completeness percentage
-userProfileSchema.virtual("completenessPercentage").get(function (this: Record<string, any>) {
-  const requiredFields = [
-    "name",
-    "email",
-    "location",
-    "industry",
-    "yearsOfExperience",
-    "workPreference",
-    "availabilityStatus",
-  ];
+userProfileSchema
+  .virtual("completenessPercentage")
+  .get(function (this: IUserProfile) {
+    const requiredFields = [
+      "name",
+      "email",
+      "location",
+      "industry",
+      "yearsOfExperience",
+      "workPreference",
+      "availabilityStatus",
+    ];
 
-  const optionalFields = [
-    "bio",
-    "currentRole",
-    "company",
-    "careerGoals",
-    "phone",
-    "skillsAndExperience",
-    "workExperience",
-    "educationDetails",
-    "certifications",
-    "languages",
-  ];
+    const optionalFields = [
+      "bio",
+      "currentRole",
+      "company",
+      "careerGoals",
+      "phone",
+      "skillsAndExperience",
+      "workExperience",
+      "educationDetails",
+      "certifications",
+      "languages",
+    ];
 
-  let completedRequired = 0;
-  let completedOptional = 0;
+    let completedRequired = 0;
+    let completedOptional = 0;
 
-  // Check required fields
-  requiredFields.forEach((field) => {
-    if (this[field] && this[field].toString().trim()) {
-      completedRequired++;
-    }
-  });
-
-  // Check optional fields
-  optionalFields.forEach((field) => {
-    if (this[field]) {
-      if (Array.isArray(this[field]) && this[field].length > 0) {
-        completedOptional++;
-      } else if (typeof this[field] === "string" && this[field].trim()) {
-        completedOptional++;
-      } else if (
-        typeof this[field] === "object" &&
-        Object.keys(this[field]).length > 0
-      ) {
-        completedOptional++;
+    // Check required fields
+    requiredFields.forEach((field) => {
+      const value = this.get(field);
+      if (value && value.toString().trim()) {
+        completedRequired++;
       }
-    }
+    });
+
+    // Check optional fields
+    optionalFields.forEach((field) => {
+      const value = this.get(field);
+      if (value) {
+        if (Array.isArray(value) && value.length > 0) {
+          completedOptional++;
+        } else if (typeof value === "string" && value.trim()) {
+          completedOptional++;
+        } else if (typeof value === "object" && Object.keys(value).length > 0) {
+          completedOptional++;
+        }
+      }
+    });
+
+    const requiredWeight = 70; // Required fields are 70% of completeness
+    const optionalWeight = 30; // Optional fields are 30% of completeness
+
+    const requiredPercentage =
+      (completedRequired / requiredFields.length) * requiredWeight;
+    const optionalPercentage =
+      (completedOptional / optionalFields.length) * optionalWeight;
+
+    return Math.round(requiredPercentage + optionalPercentage);
   });
-
-  const requiredWeight = 70; // Required fields are 70% of completeness
-  const optionalWeight = 30; // Optional fields are 30% of completeness
-
-  const requiredPercentage =
-    (completedRequired / requiredFields.length) * requiredWeight;
-  const optionalPercentage =
-    (completedOptional / optionalFields.length) * optionalWeight;
-
-  return Math.round(requiredPercentage + optionalPercentage);
-});
 
 // Instance method to get profile summary
-userProfileSchema.methods.getProfileSummary = function () {
+userProfileSchema.methods.getProfileSummary = function (this: IUserProfile) {
   return {
-    id: this._id,
+    id: (this._id as Types.ObjectId).toString(),
     name: this.name,
     email: this.email,
     currentRole: this.currentRole,
@@ -502,14 +611,14 @@ userProfileSchema.methods.getProfileSummary = function () {
 };
 
 // Static method to find profiles by criteria
-userProfileSchema.statics.findBySkills = function (skills) {
+userProfileSchema.statics.findBySkills = function (skills: string[]) {
   return this.find({
     skillsAndExperience: { $in: skills },
     profileVisibility: { $in: ["public", "community"] },
   });
 };
 
-userProfileSchema.statics.findByIndustry = function (industry) {
+userProfileSchema.statics.findByIndustry = function (industry: string) {
   return this.find({
     industry: industry,
     profileVisibility: { $in: ["public", "community"] },
@@ -532,4 +641,4 @@ userProfileSchema.statics.findMentees = function () {
 
 // Export the model
 export default mongoose.models.UserProfile ||
-  mongoose.model("UserProfile", userProfileSchema);
+  mongoose.model<IUserProfile>("UserProfile", userProfileSchema);

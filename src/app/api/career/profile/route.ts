@@ -1,34 +1,63 @@
-//api/career/profile/index.ts;
-import type { NextApiRequest, NextApiResponse } from "next";
+// app/api/career/profile/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { careerService } from "@/lib/careerService";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
-    return res.status(405).json({ message: "Method not allowed" });
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const userId = req.body._id || new Date().getTime().toString();
-    const profileData = { ...req.body, _id: userId };
+    const body = await request.json();
+    const userId = body._id || new Date().getTime().toString();
+    const profileData = { ...body, _id: userId };
 
     const newProfile = await careerService.updateUserProfile(
       userId,
       profileData
     );
+
     if (!newProfile) {
-      return res.status(500).json({ message: "Failed to create profile" });
+      return NextResponse.json(
+        { message: "Failed to create profile" },
+        { status: 500 }
+      );
     }
 
     // Track profile creation
     await careerService.trackUserActivity(userId, "profile_created");
 
-    return res.status(201).json(newProfile);
+    return NextResponse.json(newProfile, { status: 201 });
   } catch (error) {
     console.error("Error creating user profile:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
+}
+
+// Add handlers for other methods to return 405
+export async function GET() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "POST" } }
+  );
+}
+
+export async function PUT() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "POST" } }
+  );
+}
+
+export async function DELETE() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "POST" } }
+  );
+}
+
+export async function PATCH() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "POST" } }
+  );
 }

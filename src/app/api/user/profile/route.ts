@@ -1,11 +1,10 @@
 import { dbConnect } from "@/lib/dbConnect";
 import UserProfile from "@/models/UserProfile";
 import { getServerSession } from "next-auth/next";
-// import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path to your NextAuth config
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 // GET - Fetch user profile
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     await dbConnect();
 
@@ -26,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(userProfile, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching profile:", error);
     return NextResponse.json(
       { error: "Internal server error" },
@@ -36,7 +35,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST - Create new user profile
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     await dbConnect();
 
@@ -71,12 +70,12 @@ export async function POST(request: NextRequest) {
     const newProfile = await UserProfile.create(profileData);
 
     return NextResponse.json(newProfile, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating profile:", error);
     return NextResponse.json(
       {
         error: "Failed to create profile",
-        details: error.message,
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );
@@ -84,7 +83,7 @@ export async function POST(request: NextRequest) {
 }
 
 // PUT - Update existing user profile
-export async function PUT(request: NextRequest) {
+export async function PUT(request: Request) {
   try {
     await dbConnect();
 
@@ -111,12 +110,12 @@ export async function PUT(request: NextRequest) {
     );
 
     return NextResponse.json(updatedProfile, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating profile:", error);
     return NextResponse.json(
       {
         error: "Failed to update profile",
-        details: error.message,
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );
@@ -124,7 +123,7 @@ export async function PUT(request: NextRequest) {
 }
 
 // DELETE - Delete user profile
-export async function DELETE(request: NextRequest) {
+export async function DELETE() {
   try {
     await dbConnect();
 
@@ -140,7 +139,7 @@ export async function DELETE(request: NextRequest) {
       { message: "Profile deleted successfully" },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error deleting profile:", error);
     return NextResponse.json(
       { error: "Failed to delete profile" },

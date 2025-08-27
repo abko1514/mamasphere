@@ -6,7 +6,6 @@ import {
   DollarSign,
   Clock,
   MapPin,
-  Star,
   Calendar,
   User,
 } from "lucide-react";
@@ -44,21 +43,38 @@ export function FreelanceSection({
         filters
       );
       // Map the data to ensure it matches the expected FreelanceOpportunity shape
-      const mappedData = data.map((item: any) => ({
-        _id: item._id,
-        clientName: item.clientName,
-        projectType: item.projectType,
-        budget: item.budget,
-        experienceLevel: item.experienceLevel,
-        duration: item.duration,
-        isRemote: item.isRemote,
-        description: item.description,
-        skillsRequired: item.skillsRequired,
-        applicationDeadline: item.applicationDeadline,
-        postedDate: item.postedDate,
-        title: item.title ?? "", // Provide a default if missing
-        matchScore: item.matchScore ?? 0, // Provide a default if missing
-      }));
+      const mappedData = data
+        .filter(
+          (item) =>
+            item.experienceLevel === "beginner" ||
+            item.experienceLevel === "intermediate" ||
+            item.experienceLevel === "expert"
+        )
+        .map((item) => ({
+          _id: item._id,
+          clientName: item.clientName,
+          projectType: item.projectType,
+          budget: {
+            min: item.budget?.min ?? 0,
+            max: item.budget?.max ?? 0,
+            currency: item.budget?.currency ?? "USD",
+            type:
+              item.budget?.type === "hourly"
+                ? "hourly"
+                : "fixed", // Map any other value to "fixed"
+          } as { min: number; max: number; currency: string; type: "hourly" | "fixed" },
+          experienceLevel: item.experienceLevel as "beginner" | "intermediate" | "expert",
+          duration: item.duration,
+          isRemote: item.isRemote,
+          description: item.description,
+          skillsRequired: item.skillsRequired,
+          applicationDeadline: item.applicationDeadline
+            ? new Date(item.applicationDeadline)
+            : new Date(), // fallback to current date if missing
+          postedDate: new Date(item.postedDate),
+          title: item.title ?? "", // Provide a default if missing
+          matchScore: item.matchScore ?? 0, // Provide a default if missing
+        }));
       setOpportunities(mappedData);
     } catch (error) {
       console.error("Error loading freelance opportunities:", error);
@@ -84,11 +100,11 @@ export function FreelanceSection({
     }
   };
 
-  const getMatchScoreColor = (score: number) => {
-    if (score >= 80) return "text-green-600 bg-green-100";
-    if (score >= 60) return "text-yellow-600 bg-yellow-100";
-    return "text-orange-600 bg-orange-100";
-  };
+  // const getMatchScoreColor = (score: number) => {
+  //   if (score >= 80) return "text-green-600 bg-green-100";
+  //   if (score >= 60) return "text-yellow-600 bg-yellow-100";
+  //   return "text-orange-600 bg-orange-100";
+  // };
 
   if (loading) {
     return (

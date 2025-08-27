@@ -1,5 +1,126 @@
 // lib/careerService.ts
-import UserProfile from "@/models/UserProfile";
+
+// Define an interface for the application data
+interface JobApplicationData {
+  resume?: string; // File path or base64 encoded resume
+  coverLetter?: string;
+  answers?: Record<string, string>; // For job-specific questions
+  // Add other relevant fields as needed
+  [key: string]: unknown; // For any additional dynamic fields
+}
+
+// Define interfaces for user profile data
+export interface UserProfile {
+  _id: string;
+  userId: string;
+  personalInfo: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    location: string;
+    timeZone: string;
+    profilePicture?: string;
+  };
+  professionalInfo: {
+    title: string;
+    summary: string;
+    skills: string[];
+    experience: WorkExperience[];
+    education: Education[];
+    certifications: Certification[];
+    resume?: string;
+    portfolio?: string;
+  };
+  careerPreferences: {
+    desiredRoles: string[];
+    industries: string[];
+    workArrangements: ("remote" | "hybrid" | "onsite" | "flexible")[];
+    locationPreferences: string[];
+    salaryExpectations: {
+      min: number;
+      max: number;
+      currency: string;
+    };
+    willingnessToRelocate: boolean;
+    willingnessToTravel: string; // "none", "some", "extensive"
+  };
+  workLifeBalance: {
+    hoursAvailability: string; // "full-time", "part-time", "flexible"
+    childcareSupportNeeded: boolean;
+    preferredSchedule: {
+      startTime: string;
+      endTime: string;
+      timeZone: string;
+    };
+    timeOffRequirements: string[];
+  };
+  jobSearchStatus: {
+    activelyLooking: boolean;
+    startDate: string; // "immediately", "1-2 weeks", "1-3 months", "flexible"
+    opennessToOpportunities: boolean;
+    visibility: "active" | "passive" | "not-looking";
+  };
+  networkingPreferences: {
+    interestedInMentoring: boolean;
+    seekingMentorship: boolean;
+    collaborationInterest: boolean;
+    networkingFrequency: "regularly" | "occasionally" | "rarely";
+  };
+  privacySettings: {
+    profileVisibility: "public" | "connections-only" | "private";
+    resumeVisibility: "public" | "connections-only" | "private";
+    contactInfoVisibility: "public" | "connections-only" | "private";
+  };
+  achievements: Achievement[];
+  createdAt: Date;
+  updatedAt: Date;
+  completenessScore: number;
+  lastActive: Date;
+}
+
+export interface WorkExperience {
+  _id: string;
+  company: string;
+  title: string;
+  location: string;
+  startDate: Date;
+  endDate?: Date;
+  current: boolean;
+  description: string;
+  skills: string[];
+  achievements: string[];
+}
+
+export interface Education {
+  _id: string;
+  institution: string;
+  degree: string;
+  fieldOfStudy: string;
+  startDate: Date;
+  endDate?: Date;
+  current: boolean;
+  description?: string;
+}
+
+export interface Certification {
+  _id: string;
+  name: string;
+  issuingOrganization: string;
+  issueDate: Date;
+  expirationDate?: Date;
+  credentialID?: string;
+  credentialURL?: string;
+}
+
+export interface Achievement {
+  _id: string;
+  title: string;
+  date: Date;
+  description: string;
+  category: string;
+  link?: string;
+}
 
 export interface CareerTip {
   _id: string;
@@ -18,6 +139,8 @@ export interface CareerTip {
   relevanceScore: number;
   createdAt: Date;
   updatedAt: Date;
+  targetAudience: string;
+  aiGenerated: boolean;
 }
 
 export interface JobRecommendation {
@@ -36,8 +159,11 @@ export interface JobRecommendation {
   description: string;
   matchScore: number;
   isMaternityFriendly: boolean;
+  flexibleHours: boolean;
   benefitsHighlights: string[];
   applicationDeadline?: Date;
+  applicationUrl?: string;
+  reasonsForMatch?: string[];
   postedDate: Date;
   jobType: "full-time" | "part-time" | "contract" | "freelance";
   experienceLevel: "entry" | "mid" | "senior" | "executive";
@@ -75,6 +201,14 @@ export interface FreelanceOpportunity {
   difficultyLevel: "beginner" | "intermediate" | "advanced" | "expert";
   clientRating: number;
   paymentVerified: boolean;
+  experienceLevel: "beginner" | "intermediate" | "advanced" | "expert";
+  budget: {
+    min: number;
+    max: number;
+    currency: string;
+    type: "hourly" | "project" | "monthly";
+  };
+  clientName: string;
 }
 
 export interface SmallBusiness {
@@ -108,6 +242,15 @@ export interface SmallBusiness {
   tags: string[];
   verified: boolean;
   createdAt: Date;
+  businessName: string;
+  ownerName: string;
+  ownerId: string;
+  category: string;
+  images: string[];
+  isVerified: boolean;
+  rating: number;
+  reviewCount: number;
+  isMomOwned: boolean;
 }
 
 export interface AICareerInsight {
@@ -126,10 +269,73 @@ export interface AICareerInsight {
     workLifeBalanceRecommendations: string[];
     networkingOpportunities: string[];
     personalizedAdvice: string[];
+    nextUpdateDue: string | Date;
+    improvementAreas: string[];
   };
   confidenceScore: number;
+  personalizedTips: string[];
   generatedAt: Date;
   lastUpdated: Date;
+}
+
+export interface UserAnalytics {
+  userId: string;
+  profileCompleteness: number;
+  jobApplications: {
+    total: number;
+    pending: number;
+    interviews: number;
+    offers: number;
+    rejected: number;
+  };
+  skillAssessments: {
+    completed: number;
+    averageScore: number;
+    topSkills: { skill: string; score: number }[];
+  };
+  networking: {
+    connections: number;
+    messagesSent: number;
+    meetingsScheduled: number;
+  };
+  learningProgress: {
+    coursesCompleted: number;
+    hoursSpent: number;
+    certificatesEarned: number;
+  };
+  engagement: {
+    logins: number;
+    timeSpent: number; // in minutes
+    lastActive: Date;
+  };
+  recommendations: {
+    jobsApplied: number;
+    jobsSaved: number;
+    businessesContacted: number;
+  };
+  timeline: AnalyticsEvent[];
+  weeklySummary: WeeklySummary[];
+}
+
+export interface AnalyticsEvent {
+  type:
+    | "job_application"
+    | "skill_assessment"
+    | "networking"
+    | "learning"
+    | "profile_update";
+  title: string;
+  description: string;
+  timestamp: Date;
+  metadata?: Record<string, unknown>;
+}
+
+export interface WeeklySummary {
+  week: string; // ISO week format
+  applications: number;
+  learningHours: number;
+  networkingActivities: number;
+  skillImprovements: number;
 }
 
 class CareerService {
@@ -137,6 +343,71 @@ class CareerService {
 
   constructor() {
     this.baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  }
+
+  // Get user profile
+  async getUserProfile(userId: string): Promise<UserProfile | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/profile/${userId}`);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        throw new Error("Failed to fetch user profile");
+      }
+
+      const data = await response.json();
+      return data.profile || null;
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      return null;
+    }
+  }
+
+  // Update user profile
+  async updateUserProfile(
+    userId: string,
+    updates: Partial<UserProfile>
+  ): Promise<UserProfile | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/profile/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update user profile");
+      }
+
+      const data = await response.json();
+      return data.profile || null;
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      return null;
+    }
+  }
+
+  // Get user analytics
+  async getUserAnalytics(userId: string): Promise<UserAnalytics> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/api/analytics/users/${userId}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch user analytics");
+      }
+
+      const data = await response.json();
+      return data.analytics || this.getMockAnalytics(userId);
+    } catch (error) {
+      console.error("Error fetching user analytics:", error);
+      return this.getMockAnalytics(userId);
+    }
   }
 
   // Get personalized career tips based on user profile
@@ -194,11 +465,12 @@ class CareerService {
       const queryParams = new URLSearchParams({
         userId,
         limit: limit.toString(),
-        ...(filters && Object.fromEntries(
-          Object.entries(filters)
-            .filter(([_, value]) => value !== undefined)
-            .map(([key, value]) => [key, value.toString()])
-        )),
+        ...(filters &&
+          Object.fromEntries(
+            Object.entries(filters)
+              .filter(([value]) => value !== undefined)
+              .map(([key, value]) => [key, value!.toString()])
+          )),
       });
 
       const response = await fetch(
@@ -255,11 +527,12 @@ class CareerService {
     try {
       const queryParams = new URLSearchParams({
         limit: limit.toString(),
-        ...(filters && Object.fromEntries(
-          Object.entries(filters)
-            .filter(([_, value]) => value !== undefined)
-            .map(([key, value]) => [key, value.toString()])
-        )),
+        ...(filters &&
+          Object.fromEntries(
+            Object.entries(filters)
+              .filter(([value]) => value !== undefined)
+              .map(([key, value]) => [key, value!.toString()])
+          )),
       });
 
       const response = await fetch(
@@ -287,7 +560,7 @@ class CareerService {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ forceRegenerate }),
+        body: JSON.stringify({ userId, forceRegenerate }),
       });
 
       if (!response.ok) {
@@ -325,7 +598,7 @@ class CareerService {
   async applyToJob(
     userId: string,
     jobId: string,
-    applicationData: any
+    applicationData: JobApplicationData
   ): Promise<boolean> {
     try {
       const response = await fetch(
@@ -369,6 +642,156 @@ class CareerService {
     }
   }
 
+  // Track user activity
+  async trackUserActivity(
+    userId: string,
+    activityType: string,
+    metadata?: Record<string, unknown>
+  ): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/analytics/track`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId,
+          activityType,
+          metadata,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error("Error tracking user activity:", error);
+      return false;
+    }
+  }
+
+  // Mock analytics data for development/fallback
+  private getMockAnalytics(userId: string): UserAnalytics {
+    const now = new Date();
+    // const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    return {
+      userId,
+      profileCompleteness: 85,
+      jobApplications: {
+        total: 24,
+        pending: 8,
+        interviews: 6,
+        offers: 2,
+        rejected: 8,
+      },
+      skillAssessments: {
+        completed: 12,
+        averageScore: 82,
+        topSkills: [
+          { skill: "Digital Marketing", score: 92 },
+          { skill: "Content Strategy", score: 88 },
+          { skill: "Analytics", score: 85 },
+          { skill: "Team Leadership", score: 90 },
+          { skill: "Project Management", score: 87 },
+        ],
+      },
+      networking: {
+        connections: 45,
+        messagesSent: 28,
+        meetingsScheduled: 6,
+      },
+      learningProgress: {
+        coursesCompleted: 3,
+        hoursSpent: 24,
+        certificatesEarned: 2,
+      },
+      engagement: {
+        logins: 42,
+        timeSpent: 380,
+        lastActive: now,
+      },
+      recommendations: {
+        jobsApplied: 8,
+        jobsSaved: 16,
+        businessesContacted: 3,
+      },
+      timeline: [
+        {
+          type: "job_application",
+          title: "Applied to Senior Marketing Manager",
+          description: "Applied to remote position at TechForGood Inc.",
+          timestamp: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
+          metadata: { company: "TechForGood Inc.", status: "pending" },
+        },
+        {
+          type: "skill_assessment",
+          title: "Completed Digital Marketing Assessment",
+          description: "Scored 92% on advanced digital marketing skills",
+          timestamp: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
+          metadata: { score: 92, category: "Digital Marketing" },
+        },
+        {
+          type: "networking",
+          title: "Connected with Industry Professional",
+          description:
+            "Had coffee chat with marketing director at Sustainable Solutions",
+          timestamp: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+          metadata: {
+            connection: "Jessica Rodriguez",
+            company: "Sustainable Solutions",
+          },
+        },
+        {
+          type: "learning",
+          title: "Completed Marketing Automation Course",
+          description: "Finished 8-hour course on HubSpot automation",
+          timestamp: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+          metadata: {
+            course: "HubSpot Automation Mastery",
+            duration: "8 hours",
+          },
+        },
+        {
+          type: "profile_update",
+          title: "Updated Professional Summary",
+          description: "Enhanced profile with recent achievements and skills",
+          timestamp: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
+          metadata: { sectionsUpdated: ["summary", "skills"] },
+        },
+      ],
+      weeklySummary: [
+        {
+          week: "2024-W03",
+          applications: 6,
+          learningHours: 8,
+          networkingActivities: 3,
+          skillImprovements: 2,
+        },
+        {
+          week: "2024-W02",
+          applications: 5,
+          learningHours: 6,
+          networkingActivities: 2,
+          skillImprovements: 1,
+        },
+        {
+          week: "2024-W01",
+          applications: 4,
+          learningHours: 5,
+          networkingActivities: 1,
+          skillImprovements: 1,
+        },
+        {
+          week: "2023-W52",
+          applications: 3,
+          learningHours: 5,
+          networkingActivities: 0,
+          skillImprovements: 0,
+        },
+      ],
+    };
+  }
+
   // Mock data methods for development/fallback
   private getMockTips(): CareerTip[] {
     return [
@@ -385,6 +808,8 @@ class CareerService {
         relevanceScore: 95,
         createdAt: new Date("2024-01-15"),
         updatedAt: new Date("2024-01-15"),
+        targetAudience: "working mothers",
+        aiGenerated: false,
       },
       {
         _id: "tip_2",
@@ -399,6 +824,8 @@ class CareerService {
         relevanceScore: 88,
         createdAt: new Date("2024-01-10"),
         updatedAt: new Date("2024-01-10"),
+        targetAudience: "working mothers",
+        aiGenerated: false,
       },
       {
         _id: "tip_3",
@@ -418,6 +845,8 @@ class CareerService {
         relevanceScore: 92,
         createdAt: new Date("2024-01-08"),
         updatedAt: new Date("2024-01-08"),
+        targetAudience: "working mothers",
+        aiGenerated: false,
       },
       {
         _id: "tip_4",
@@ -437,6 +866,8 @@ class CareerService {
         relevanceScore: 90,
         createdAt: new Date("2024-01-05"),
         updatedAt: new Date("2024-01-05"),
+        targetAudience: "working mothers",
+        aiGenerated: false,
       },
       {
         _id: "tip_5",
@@ -456,6 +887,8 @@ class CareerService {
         relevanceScore: 85,
         createdAt: new Date("2024-01-03"),
         updatedAt: new Date("2024-01-03"),
+        targetAudience: "working mothers",
+        aiGenerated: false,
       },
     ];
   }
@@ -488,6 +921,7 @@ class CareerService {
           "Lead our digital marketing initiatives for a mission-driven tech company focused on social impact. Perfect for an experienced marketer who wants to make a difference while maintaining work-life balance.",
         matchScore: 94,
         isMaternityFriendly: true,
+        flexibleHours: true,
         benefitsHighlights: [
           "12 weeks paid parental leave",
           "Flexible hours",
@@ -531,6 +965,7 @@ class CareerService {
           "Shape the marketing strategy for innovative sustainability products. Join a values-driven company that prioritizes both environmental impact and employee well-being.",
         matchScore: 91,
         isMaternityFriendly: true,
+        flexibleHours: true,
         benefitsHighlights: [
           "Unlimited PTO",
           "Equity package",
@@ -574,6 +1009,7 @@ class CareerService {
           "Work with diverse clients on exciting marketing projects. Set your own schedule and choose projects that align with your values and interests.",
         matchScore: 87,
         isMaternityFriendly: true,
+        flexibleHours: true,
         benefitsHighlights: [
           "Flexible schedule",
           "Choose your projects",
@@ -619,6 +1055,14 @@ class CareerService {
         difficultyLevel: "intermediate",
         clientRating: 4.8,
         paymentVerified: true,
+        experienceLevel: "intermediate",
+        budget: {
+          min: 5000,
+          max: 8000,
+          currency: "USD",
+          type: "project",
+        },
+        clientName: "LearnSmart Academy",
       },
       {
         _id: "freelance_2",
@@ -643,10 +1087,19 @@ class CareerService {
         matchScore: 89,
         isRemote: true,
         timeZoneRequirement: "EST +/- 3 hours",
+        applicationDeadline: undefined,
         postedDate: new Date("2024-01-20"),
         difficultyLevel: "advanced",
         clientRating: 4.9,
         paymentVerified: true,
+        experienceLevel: "advanced",
+        budget: {
+          min: 85,
+          max: 120,
+          currency: "USD",
+          type: "hourly",
+        },
+        clientName: "GreenTech Solutions",
       },
       {
         _id: "freelance_3",
@@ -674,6 +1127,14 @@ class CareerService {
         difficultyLevel: "intermediate",
         clientRating: 4.7,
         paymentVerified: true,
+        experienceLevel: "intermediate",
+        budget: {
+          min: 2500,
+          max: 3500,
+          currency: "USD",
+          type: "monthly",
+        },
+        clientName: "Modern Family Co.",
       },
     ];
   }
@@ -721,6 +1182,15 @@ class CareerService {
         tags: ["technology", "consulting", "remote-work", "family-friendly"],
         verified: true,
         createdAt: new Date("2023-06-15"),
+        businessName: "MomTech Consulting",
+        ownerName: "Sarah Chen",
+        ownerId: "owner_1",
+        category: "Technology Consulting",
+        images: ["https://momtechconsulting.com/image1.jpg"],
+        isVerified: true,
+        rating: 4.9,
+        reviewCount: 23,
+        isMomOwned: true,
       },
       {
         _id: "business_2",
@@ -763,6 +1233,15 @@ class CareerService {
         tags: ["marketing", "branding", "content", "family-focused"],
         verified: true,
         createdAt: new Date("2023-03-20"),
+        businessName: "Balanced Marketing Agency",
+        ownerName: "Jessica Rodriguez & Maria Thompson",
+        ownerId: "owner_2",
+        category: "Marketing & Advertising",
+        images: ["https://balancedmarketing.co/image1.jpg"],
+        isVerified: true,
+        rating: 4.8,
+        reviewCount: 17,
+        isMomOwned: true,
       },
       {
         _id: "business_3",
@@ -807,6 +1286,15 @@ class CareerService {
         ],
         verified: true,
         createdAt: new Date("2022-09-10"),
+        businessName: "FlexCareers Coaching",
+        ownerName: "Amanda Foster",
+        ownerId: "owner_3",
+        category: "Professional Services",
+        images: ["https://flexcareerscoaching.com/image1.jpg"],
+        isVerified: true,
+        rating: 4.7,
+        reviewCount: 12,
+        isMomOwned: true,
       },
     ];
   }
@@ -880,7 +1368,18 @@ class CareerService {
           "Build thought leadership by sharing insights about marketing to working parent demographics",
           "Explore mentoring opportunities - your experience is valuable to other working mothers in marketing",
         ],
+        nextUpdateDue: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        improvementAreas: [
+          "Expand your technical marketing skills by learning basic data analytics.",
+          "Practice executive-level presentations to boost boardroom confidence.",
+          "Seek mentorship from senior leaders in your target industry.",
+        ],
       },
+      personalizedTips: [
+        "Schedule regular networking sessions with other working mothers in your field.",
+        "Update your LinkedIn profile to highlight your unique strengths as a parent.",
+        "Consider taking a short online course in marketing automation.",
+      ],
       confidenceScore: 87,
       generatedAt: new Date(),
       lastUpdated: new Date(),

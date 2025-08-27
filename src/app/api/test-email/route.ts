@@ -34,10 +34,11 @@ export async function POST(request: Request): Promise<NextResponse> {
       title: "✅ Email Setup Test",
       description:
         "This is a test email to verify your notification setup is working correctly! If you received this, your email notifications are ready to go. 🎉",
-      dueDate: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      dueDate: new Date(Date.now() + 60 * 60 * 1000),
       priority: 4,
       category: "general",
       userId: "test-user",
+      completed: false,
     };
 
     const testUser = {

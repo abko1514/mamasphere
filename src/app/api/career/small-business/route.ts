@@ -1,29 +1,39 @@
-// /api/career/small-businesses.ts
-import { NextApiRequest, NextApiResponse } from "next";
+// app/api/small-businesses/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/dbConnect";
-import { SmallBusiness } from "@/models/Career";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  switch (req.method) {
-    case "GET":
-      return getSmallBusinesses(req, res);
-    case "POST":
-      return createSmallBusiness(req, res);
-    default:
-      return res.status(405).json({ message: "Method not allowed" });
+export async function GET() {
+  try {
+    await dbConnect();
+    const { MongoClient } = await import("mongodb");
+    const client = new MongoClient(process.env.MONGODB_URI as string);
+    await client.connect();
+    const db = client.db();
+    const businesses = await db
+      .collection("smallBusinesses")
+      .find({})
+      .toArray();
+
+    await client.close();
+    return NextResponse.json(businesses, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching small businesses:", error);
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
-async function createSmallBusiness(req: NextApiRequest, res: NextApiResponse) {
+export async function POST(request: NextRequest) {
   try {
-    const db: any = await dbConnect();
-    if (db == null) {
-      throw new Error("Database connection failed");
-    }
-    const businessData = req.body;
+    await dbConnect();
+    const { MongoClient } = await import("mongodb");
+    const client = new MongoClient(process.env.MONGODB_URI as string);
+    await client.connect();
+    const db = client.db();
+
+    const businessData = await request.json();
 
     // Validate required fields
     if (
@@ -32,11 +42,15 @@ async function createSmallBusiness(req: NextApiRequest, res: NextApiResponse) {
       !businessData.ownerId ||
       !businessData.category
     ) {
-      return res.status(400).json({ message: "Missing required fields" });
+      return NextResponse.json(
+        { message: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
-    const newBusiness: SmallBusiness = {
-      _id: new Date().getTime().toString(),
+    const { ObjectId } = await import("mongodb");
+    const newBusiness = {
+      _id: new ObjectId(),
       ...businessData,
       isVerified: false,
       rating: 0,
@@ -45,25 +59,36 @@ async function createSmallBusiness(req: NextApiRequest, res: NextApiResponse) {
     };
 
     await db.collection("smallBusinesses").insertOne(newBusiness);
+    await client.close();
 
-    res.status(201).json(newBusiness);
+    return NextResponse.json(newBusiness, { status: 201 });
   } catch (error) {
     console.error("Error creating small business:", error);
-    res.status(500).json({ message: "Internal server error" });
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
-async function getSmallBusinesses(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    const db: any = await dbConnect();
-    if (db == null) {
-      throw new Error("Database connection failed");
-    }
-    const businesses = await db.collection("smallBusinesses").find({}).toArray();
-    res.status(200).json(businesses);
-  } catch (error) {
-    console.error("Error fetching small businesses:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
+// Add handlers for other methods to return 405
+export async function PUT() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "GET, POST" } }
+  );
 }
 
+export async function DELETE() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "GET, POST" } }
+  );
+}
+
+export async function PATCH() {
+  return NextResponse.json(
+    { message: "Method not allowed" },
+    { status: 405, headers: { Allow: "GET, POST" } }
+  );
+}

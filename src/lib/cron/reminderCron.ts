@@ -1,5 +1,5 @@
 // 2. lib/cron/reminderCron.ts - Enhanced with better error handling and logging
-import { ReminderService } from '../services/reminderService';
+// import { ReminderService } from '../services/reminderService';
 
 export class ReminderCron {
   private static interval: NodeJS.Timeout | null = null;
@@ -19,7 +19,7 @@ export class ReminderCron {
     this.interval = setInterval(async () => {
       try {
         const startTime = new Date();
-        await ReminderService.processPendingReminders();
+        // await ReminderService.processPendingReminders();
         const endTime = new Date();
         const duration = endTime.getTime() - startTime.getTime();
         console.log(
@@ -31,11 +31,11 @@ export class ReminderCron {
     }, this.CHECK_INTERVAL);
 
     // Also run immediately on startup
-    ReminderService.processPendingReminders()
-      .then(() => console.log("✅ Initial reminder check completed"))
-      .catch((error) =>
-        console.error("❌ Initial reminder check failed:", error)
-      );
+    // ReminderService.processPendingReminders()
+    //   .then(() => console.log("✅ Initial reminder check completed"))
+    //   .catch((error) =>
+    //     console.error("❌ Initial reminder check failed:", error)
+    //   );
 
     // Handle process termination
     process.on("SIGTERM", () => {

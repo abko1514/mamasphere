@@ -1,24 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   User,
   Briefcase,
-  MapPin,
   Heart,
   GraduationCap,
   Target,
-  DollarSign,
-  Calendar,
   Plus,
   Trash2,
   Save,
-  Edit3,
-  Baby,
-  Home,
   Globe,
-  Phone,
-  Mail,
   CheckCircle,
-  AlertCircle,
   ArrowLeft,
   ArrowRight,
 } from "lucide-react";
@@ -232,34 +223,34 @@ const CareerProfileForm = () => {
     "Remote work capability",
   ];
 
-// Form validation
+  // Form validation
 
-interface ValidateStepFn {
+  interface ValidateStepFn {
     (step: number): boolean;
-}
+  }
 
-const validateStep: ValidateStepFn = (step) => {
+  const validateStep: ValidateStepFn = (step) => {
     const newErrors: StepErrors = {};
 
     switch (step) {
-        case 1:
-            if (!formData.name) newErrors.name = "Name is required";
-            if (!formData.email) newErrors.email = "Email is required";
-            if (!formData.location) newErrors.location = "Location is required";
-            break;
-        case 3:
-            if (!formData.industry) newErrors.industry = "Industry is required";
-            if (formData.yearsOfExperience < 0)
-                newErrors.yearsOfExperience =
-                    "Years of experience cannot be negative";
-            break;
-        default:
-            break;
+      case 1:
+        if (!formData.name) newErrors.name = "Name is required";
+        if (!formData.email) newErrors.email = "Email is required";
+        if (!formData.location) newErrors.location = "Location is required";
+        break;
+      case 3:
+        if (!formData.industry) newErrors.industry = "Industry is required";
+        if (formData.yearsOfExperience < 0)
+          newErrors.yearsOfExperience =
+            "Years of experience cannot be negative";
+        break;
+      default:
+        break;
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-};
+  };
 
   // Handle form submission
   const handleSubmit = async () => {
@@ -297,76 +288,80 @@ const validateStep: ValidateStepFn = (step) => {
   };
 
   // Add work experience
-  const addWorkExperience = () => {
-    setFormData((prev) => ({
-      ...prev,
-      workExperience: [
-        ...prev.workExperience,
-        {
-          id: Date.now().toString(),
-          company: "",
-          position: "",
-          startDate: "",
-          endDate: "",
-          isCurrent: false,
-          description: "",
-          employmentType: "full-time",
-        },
-      ],
-    }));
-  };
+  // const addWorkExperience = () => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     workExperience: [
+  //       ...prev.workExperience,
+  //       {
+  //         id: Date.now().toString(),
+  //         company: "",
+  //         position: "",
+  //         startDate: "",
+  //         endDate: "",
+  //         isCurrent: false,
+  //         description: "",
+  //         employmentType: "full-time",
+  //       },
+  //     ],
+  //   }));
+  // };
 
   // Remove work experience
-interface RemoveWorkExperienceFn {
-    (id: string): void;
-}
+  // interface RemoveWorkExperienceFn {
+  //   (id: string): void;
+  // }
 
-const removeWorkExperience: RemoveWorkExperienceFn = (id) => {
-    setFormData((prev) => ({
-        ...prev,
-        workExperience: prev.workExperience.filter((exp) => exp.id !== id),
-    }));
-};
+  // const removeWorkExperience: RemoveWorkExperienceFn = (id) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     workExperience: prev.workExperience.filter((exp) => exp.id !== id),
+  //   }));
+  // };
 
   // Update work experience
-interface UpdateWorkExperienceFn {
-    (id: string, field: keyof WorkExperience, value: WorkExperience[keyof WorkExperience]): void;
-}
+  // interface UpdateWorkExperienceFn {
+  //   (
+  //     id: string,
+  //     field: keyof WorkExperience,
+  //     value: WorkExperience[keyof WorkExperience]
+  //   ): void;
+  // }
 
-const updateWorkExperience: UpdateWorkExperienceFn = (id, field, value) => {
-    setFormData((prev) => ({
-        ...prev,
-        workExperience: prev.workExperience.map((exp) =>
-            exp.id === id ? { ...exp, [field]: value } : exp
-        ),
-    }));
-};
+  // const updateWorkExperience: UpdateWorkExperienceFn = (id, field, value) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     workExperience: prev.workExperience.map((exp) =>
+  //       exp.id === id ? { ...exp, [field]: value } : exp
+  //     ),
+  //   }));
+  // };
 
   // Handle skill addition
-interface AddSkillFn {
+  interface AddSkillFn {
     (skill: string): void;
-}
+  }
 
-const addSkill: AddSkillFn = (skill) => {
+  const addSkill: AddSkillFn = (skill) => {
     if (!formData.skillsAndExperience.includes(skill)) {
-        setFormData((prev) => ({
-            ...prev,
-            skillsAndExperience: [...prev.skillsAndExperience, skill],
-        }));
+      setFormData((prev) => ({
+        ...prev,
+        skillsAndExperience: [...prev.skillsAndExperience, skill],
+      }));
     }
-};
+  };
 
   // Handle skill removal
-interface RemoveSkillFn {
+  interface RemoveSkillFn {
     (skill: string): void;
-}
+  }
 
-const removeSkill: RemoveSkillFn = (skill) => {
+  const removeSkill: RemoveSkillFn = (skill) => {
     setFormData((prev) => ({
-        ...prev,
-        skillsAndExperience: prev.skillsAndExperience.filter((s) => s !== skill),
+      ...prev,
+      skillsAndExperience: prev.skillsAndExperience.filter((s) => s !== skill),
     }));
-};
+  };
 
   // Handle children ages
   const addChildAge = () => {
@@ -376,29 +371,29 @@ const removeSkill: RemoveSkillFn = (skill) => {
     }));
   };
 
-interface UpdateChildAgeFn {
+  interface UpdateChildAgeFn {
     (index: number, age: number | string): void;
-}
+  }
 
-const updateChildAge: UpdateChildAgeFn = (index, age) => {
+  const updateChildAge: UpdateChildAgeFn = (index, age) => {
     setFormData((prev) => ({
-        ...prev,
-        childrenAges: prev.childrenAges.map((a, i) =>
-            i === index ? parseInt(age as string) || 0 : a
-        ),
+      ...prev,
+      childrenAges: prev.childrenAges.map((a, i) =>
+        i === index ? parseInt(age as string) || 0 : a
+      ),
     }));
-};
+  };
 
-interface RemoveChildAgeFn {
+  interface RemoveChildAgeFn {
     (index: number): void;
-}
+  }
 
-const removeChildAge: RemoveChildAgeFn = (index) => {
+  const removeChildAge: RemoveChildAgeFn = (index) => {
     setFormData((prev) => ({
-        ...prev,
-        childrenAges: prev.childrenAges.filter((_, i) => i !== index),
+      ...prev,
+      childrenAges: prev.childrenAges.filter((_, i) => i !== index),
     }));
-};
+  };
 
   // Render step content
   const renderStepContent = () => {
@@ -548,7 +543,7 @@ const removeChildAge: RemoveChildAgeFn = (index) => {
                   htmlFor="pregnant"
                   className="text-sm font-medium text-gray-700"
                 >
-                  I'm currently pregnant
+                  I&apos;m currently pregnant
                 </label>
               </div>
 
@@ -596,7 +591,7 @@ const removeChildAge: RemoveChildAgeFn = (index) => {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="block text-sm font-medium text-gray-700">
-                    Children's Ages
+                    Children&apos;s Ages
                   </label>
                   <button
                     type="button"
@@ -751,9 +746,9 @@ const removeChildAge: RemoveChildAgeFn = (index) => {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="high_school">High School</option>
-                  <option value="associates">Associate's Degree</option>
-                  <option value="bachelors">Bachelor's Degree</option>
-                  <option value="masters">Master's Degree</option>
+                  <option value="associates">Associate&apos;s Degree</option>
+                  <option value="bachelors">Bachelor&apos;s Degree</option>
+                  <option value="masters">Master&apos;s Degree</option>
                   <option value="phd">PhD</option>
                   <option value="other">Other</option>
                 </select>
@@ -1046,6 +1041,7 @@ const removeChildAge: RemoveChildAgeFn = (index) => {
                   {formData.certifications.map((cert, index) => (
                     <div
                       key={cert.id}
+                      tabIndex={index}
                       className="border border-gray-200 rounded-lg p-4"
                     >
                       <div className="grid md:grid-cols-2 gap-4 mb-3">
@@ -1300,7 +1296,7 @@ const removeChildAge: RemoveChildAgeFn = (index) => {
                       className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                     />
                     <span className="text-sm text-gray-700">
-                      I'm interested in mentorship opportunities
+                      I&apos;m interested in mentorship opportunities
                     </span>
                   </label>
                 </div>

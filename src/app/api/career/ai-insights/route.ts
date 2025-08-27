@@ -1,29 +1,28 @@
-//api/career/ai-insights.ts;
-import type { NextApiRequest, NextApiResponse } from "next";
+// app/api/career/ai-insights/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { careerService } from "@/lib/careerService";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
-    return res.status(405).json({ message: "Method not allowed" });
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const { userId, forceRegenerate = false } = req.body;
+    const { userId, forceRegenerate = false } = await request.json();
 
     if (!userId) {
-      return res.status(400).json({ message: "User ID is required" });
+      return NextResponse.json(
+        { message: "User ID is required" },
+        { status: 400 }
+      );
     }
 
-    const insights = await careerService.generateAIInsights(
+    const insights = await careerService.generateAICareerInsights(
       userId,
       forceRegenerate
     );
+
     if (!insights) {
-      return res.status(500).json({ message: "Failed to generate insights" });
+      return NextResponse.json(
+        { message: "Failed to generate insights" },
+        { status: 500 }
+      );
     }
 
     // Track insights generation
@@ -32,9 +31,25 @@ export default async function handler(
       forceRegenerate,
     });
 
-    return res.status(200).json(insights);
+    return NextResponse.json(insights, { status: 200 });
   } catch (error) {
     console.error("Error generating AI insights:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
+}
+
+// Add other HTTP methods if needed, or return 405 for unsupported methods
+export async function GET() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
+}
+
+export async function PUT() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
+}
+
+export async function DELETE() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
 }

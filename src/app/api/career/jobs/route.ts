@@ -1,36 +1,31 @@
-// pages/api/career/jobs.ts
-import type { NextApiRequest, NextApiResponse } from "next";
+// app/api/career/jobs/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { careerService } from "@/lib/careerService";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "GET") {
-    res.setHeader("Allow", ["GET"]);
-    return res.status(405).json({ message: "Method not allowed" });
-  }
-
+export async function GET(request: NextRequest) {
   try {
-    const {
-      userId,
-      limit = "20",
-      type,
-      workArrangement,
-      location,
-      salaryMin,
-      experienceLevel,
-    } = req.query;
+    const { searchParams } = new URL(request.url);
 
-    if (!userId || typeof userId !== "string") {
-      return res.status(400).json({ message: "User ID is required" });
+    const userId = searchParams.get("userId");
+    const limit = searchParams.get("limit") || "20";
+    const type = searchParams.get("type");
+    const workArrangement = searchParams.get("workArrangement");
+    const location = searchParams.get("location");
+    const salaryMin = searchParams.get("salaryMin");
+    const experienceLevel = searchParams.get("experienceLevel");
+
+    if (!userId) {
+      return NextResponse.json(
+        { message: "User ID is required" },
+        { status: 400 }
+      );
     }
 
     const filters = {
       type: type as string,
       workArrangement: workArrangement as string,
       location: location as string,
-      salaryMin: salaryMin ? parseInt(salaryMin as string) : undefined,
+      salaryMin: salaryMin ? parseInt(salaryMin) : undefined,
       experienceLevel: experienceLevel as string,
     };
 
@@ -44,7 +39,7 @@ export default async function handler(
     const jobs = await careerService.getJobRecommendations(
       userId,
       Object.keys(filters).length > 0 ? filters : undefined,
-      parseInt(limit as string)
+      parseInt(limit)
     );
 
     // Track job recommendations viewed
@@ -53,9 +48,29 @@ export default async function handler(
       filters,
     });
 
-    return res.status(200).json(jobs);
+    return NextResponse.json(jobs);
   } catch (error) {
     console.error("Error fetching job recommendations:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
+}
+
+// Add other HTTP methods if needed
+export async function POST() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
+}
+
+export async function PUT() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
+}
+
+export async function DELETE() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
+}
+
+export async function PATCH() {
+  return NextResponse.json({ message: "Method not allowed" }, { status: 405 });
 }

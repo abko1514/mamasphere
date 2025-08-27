@@ -133,6 +133,7 @@ export interface AICareerInsight {
     workLifeBalanceRecommendations: string[];
     networkingOpportunities: string[];
     personalizedAdvice: string[];
+    nextUpdateDue: string | Date;
   };
   personalizedTips: CareerTip[];
   generatedAt: Date;

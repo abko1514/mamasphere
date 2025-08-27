@@ -1,4 +1,3 @@
-// 7. app/api/reminders/schedule/route.ts - API endpoint for scheduling reminders
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -27,16 +26,25 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
+    // Validate date format
+    const reminderDate = new Date(reminderTime);
+    if (isNaN(reminderDate.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid reminderTime format" },
+        { status: 400 }
+      );
+    }
+
     await ReminderService.scheduleTaskReminder(
       taskId,
       session.user.email,
-      new Date(reminderTime)
+      reminderDate
     );
 
     return NextResponse.json({
       message: "Reminder scheduled successfully",
       taskId,
-      reminderTime,
+      reminderTime: reminderDate.toISOString(),
     });
   } catch (error) {
     console.error("Error scheduling reminder:", error);
@@ -44,6 +52,28 @@ export async function POST(request: Request): Promise<Response> {
       {
         error: "Failed to schedule reminder",
         details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(): Promise<Response> {
+  try {
+    // Get authenticated user
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    return NextResponse.json({
+      message: "Reminder scheduling endpoint is active",
+    });
+  } catch (error) {
+    console.error("Error in reminder schedule endpoint:", error);
+    return NextResponse.json(
+      {
+        error: "Server error",
       },
       { status: 500 }
     );

@@ -5,8 +5,6 @@ import {
   Building2,
   MapPin,
   Star,
-  Phone,
-  Mail,
   ExternalLink,
   Heart,
   Instagram,
@@ -19,27 +17,25 @@ import {
   Eye,
   Share2,
   MessageCircle,
-  Calendar,
-  Globe,
-  Award,
   Users,
   TrendingUp,
   Search,
+  Globe,
 } from "lucide-react";
-import { careerService } from "@/lib/careerService";
+
+interface BusinessFilters {
+  category: string;
+  location: string;
+  momOwned: boolean;
+  searchQuery: string;
+}
 
 interface BusinessSectionProps {
   businesses: SmallBusiness[];
   loading: boolean;
-  filters: {
-    category: string;
-    location: string;
-    momOwned: boolean;
-    searchQuery: string;
-  };
-  setFilters: (filters: any) => void;
+  filters: BusinessFilters;
+  setFilters: (filters: BusinessFilters) => void;
   onApplyFilters: () => void;
-  userId: string;
 }
 
 export function BusinessSection({
@@ -48,7 +44,6 @@ export function BusinessSection({
   filters,
   setFilters,
   onApplyFilters,
-  userId,
 }: BusinessSectionProps) {
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [selectedBusiness, setSelectedBusiness] =
@@ -56,6 +51,8 @@ export function BusinessSection({
   const [savedBusinesses, setSavedBusinesses] = useState<Set<string>>(
     new Set()
   );
+  console.log(showRegisterForm);
+  console.log(selectedBusiness);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const businessCategories = [

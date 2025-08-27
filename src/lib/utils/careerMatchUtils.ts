@@ -1,8 +1,29 @@
 // lib/utils/careerMatchingUtils.ts
-import { UserProfile, JobRecommendation } from "@/models/Career";
+import { UserProfile } from "@/models/Career";
+import { FreelanceOpportunity } from "../careerService";
+
+// Define interfaces for the job objects
+interface Job {
+  requirements: string[];
+  workArrangement: string;
+  location: string;
+  salaryRange?: {
+    min: number;
+    max: number;
+  };
+  isMaternityFriendly?: boolean;
+  flexibleHours?: boolean;
+  title: string;
+  type?: string;
+}
+
+// interface JobMatchResult {
+//   score: number;
+//   reasons: string[];
+// }
 
 export class CareerMatchingEngine {
-  static calculateJobMatchScore(job: any, user: UserProfile): number {
+  static calculateJobMatchScore(job: Job, user: UserProfile): number {
     let score = 0;
     const weights = {
       skills: 0.3,
@@ -22,11 +43,11 @@ export class CareerMatchingEngine {
         req.toLowerCase()
       );
 
-    const matchingSkills: string[] = userSkills.filter((skill: string) =>
-      jobRequirements.some(
-        (req: string) => req.includes(skill) || skill.includes(req)
-      )
-    );
+      const matchingSkills: string[] = userSkills.filter((skill: string) =>
+        jobRequirements.some(
+          (req: string) => req.includes(skill) || skill.includes(req)
+        )
+      );
 
       const skillsScore =
         (matchingSkills.length / Math.max(jobRequirements.length, 1)) * 100;
@@ -105,7 +126,7 @@ export class CareerMatchingEngine {
     return Math.min(Math.round(score), 100);
   }
 
-  static generateMatchReasons(job: any, user: UserProfile): string[] {
+  static generateMatchReasons(job: Job, user: UserProfile): string[] {
     const reasons: string[] = [];
 
     // Skills match
@@ -164,7 +185,7 @@ export class CareerMatchingEngine {
   }
 
   static calculateFreelanceMatchScore(
-    opportunity: any,
+    opportunity: FreelanceOpportunity,
     user: UserProfile
   ): number {
     let score = 0;

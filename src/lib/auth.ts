@@ -1,5 +1,5 @@
 // 1. Create a new file: lib/auth.ts
-import NextAuth, { AuthOptions, DefaultSession } from "next-auth";
+import  { AuthOptions } from "next-auth";
 import { Account, User as AuthUser } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -16,13 +16,16 @@ interface Credentials {
 declare module "next-auth" {
   interface Session {
     user: {
-      id: string;
+      id?: string | null;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
       role?: string | null;
-    } & DefaultSession["user"];
+    };
   }
 
   interface User {
-    id?: string;
+    id?: string | null;
     name?: string | null;
     email?: string | null;
     image?: string | null;
@@ -137,7 +140,7 @@ export const authOptions: AuthOptions = {
     },
     async jwt({ token, user }) {
       if (user) {
-        token.sub = user.id;
+        token.sub = typeof user.id === "string" ? user.id : undefined;
         const dbUser = await Users.findById(user.id);
         token.role = typeof dbUser?.role === "string" ? dbUser?.role : null;
       }

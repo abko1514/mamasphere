@@ -192,13 +192,13 @@ You're receiving this because you have email reminders enabled.
     try {
       const transporter = this.initializeTransporter();
 
-      const formatDate = (date: Date) => {
-        return date.toLocaleDateString("en-US", {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-        });
-      };
+      // const formatDate = (date: Date) => {
+      //   return date.toLocaleDateString("en-US", {
+      //     weekday: "short",
+      //     month: "short",
+      //     day: "numeric",
+      //   });
+      // };
 
       const tasksList = tasks
         .map((task) => {
