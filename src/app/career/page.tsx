@@ -846,7 +846,7 @@ export default function CareerSupportPage() {
               }))}
               loading={loading}
               filters={jobFilters}
-              setFilters={setJobFilters}
+              setFilters={(filters) => setJobFilters(prev => ({ ...prev, ...filters }))}
               onApplyFilters={loadInitialData}
               userId={user.id}
             />

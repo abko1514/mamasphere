@@ -1,4 +1,3 @@
-// 1. lib/services/reminderService.ts - Fixed version
 import { EmailService } from "./emailService";
 import { dbConnect } from "@/lib/dbConnect";
 import mongoose from "mongoose";
@@ -8,7 +7,7 @@ const reminderSchema = new mongoose.Schema({
   taskId: { type: String, required: true },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users",
+    ref: "User",
     required: true,
   },
   reminderTime: { type: Date, required: true },
@@ -67,7 +66,143 @@ interface TaskDocument {
 }
 
 export class ReminderService {
-  // ... existing methods ...
+  static async scheduleTaskReminder(
+    taskId: string,
+    userEmail: string,
+    reminderTime: Date
+  ): Promise<void> {
+    try {
+      await dbConnect();
+
+      const User = mongoose.models.User;
+      if (!User) {
+        throw new Error("User model not found");
+      }
+
+      // Find user by email
+      const user = await User.findOne({ email: userEmail });
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      // Remove any existing reminders for this task
+      await Reminder.deleteMany({ taskId, type: "task-reminder" });
+
+      // Create new reminder
+      const reminder = new Reminder({
+        taskId,
+        userId: user._id,
+        reminderTime,
+        type: "task-reminder",
+        sent: false,
+      });
+
+      await reminder.save();
+      console.log(
+        `📅 Task reminder scheduled for: ${reminderTime.toLocaleString()}`
+      );
+    } catch (error) {
+      console.error("Failed to schedule task reminder:", error);
+      throw error;
+    }
+  }
+
+  static async processReminders(): Promise<void> {
+    try {
+      await dbConnect();
+
+      const now = new Date();
+      const reminders = await Reminder.find({
+        sent: false,
+        reminderTime: { $lte: now },
+      }).populate("userId");
+
+      console.log(`⏰ Processing ${reminders.length} reminders...`);
+
+      for (const reminder of reminders) {
+        try {
+          switch (reminder.type) {
+            case "task-reminder":
+              await this.processTaskReminder(reminder);
+              break;
+            case "overdue-check":
+              await this.processOverdueCheck(reminder);
+              break;
+            case "daily-digest":
+              await this.processDailyDigest(reminder);
+              break;
+          }
+
+          // Mark as sent
+          reminder.sent = true;
+          reminder.sentAt = new Date();
+          await reminder.save();
+        } catch (error) {
+          console.error(`Error processing reminder ${reminder._id}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error("Error in reminder processing:", error);
+    }
+  }
+
+  private static async processTaskReminder(
+    reminder: ScheduledReminder
+  ): Promise<void> {
+    try {
+      await dbConnect();
+
+      const Task = mongoose.models.Task;
+      const User = mongoose.models.User;
+
+      if (!Task || !User) {
+        console.error("Task or User model not found");
+        return;
+      }
+
+      // Get task details
+      const task = await Task.findById(reminder.taskId);
+      if (!task) {
+        console.log("Task not found for reminder:", reminder.taskId);
+        return;
+      }
+
+      // Get user data
+      const user = await User.findById(reminder.userId);
+      if (!user || !user.email) {
+        console.log("User not found for reminder:", reminder.userId);
+        return;
+      }
+
+      const taskForEmail: TaskForEmail = {
+        _id: task._id.toString(),
+        title: task.title,
+        description: task.description,
+        userId: task.userId,
+        dueDate: task.dueDate,
+        priority: task.priority,
+        category: task.category,
+        completed: task.completed,
+      };
+
+      const userData: UserData = {
+        email: user.email,
+        name: user.name,
+      };
+
+      // Send reminder email
+      const success = await EmailService.sendTaskReminder(
+        taskForEmail,
+        userData
+      );
+
+      if (success) {
+        console.log("✅ Task reminder sent for:", task.title);
+      }
+    } catch (error) {
+      console.error("Error processing task reminder:", error);
+    }
+  }
 
   private static async processOverdueCheck(
     reminder: ScheduledReminder
@@ -76,15 +211,15 @@ export class ReminderService {
       await dbConnect();
 
       const Task = mongoose.models.Task;
-      const Users = mongoose.models.Users;
+      const User = mongoose.models.User;
 
-      if (!Task || !Users) {
-        console.error("Task or Users model not found");
+      if (!Task || !User) {
+        console.error("Task or User model not found");
         return;
       }
 
       // Get user data
-      const user = await Users.findById(reminder.userId);
+      const user = await User.findById(reminder.userId);
 
       if (!user || !user.email) {
         console.log("User not found or no email for userId:", reminder.userId);
@@ -150,15 +285,15 @@ export class ReminderService {
       await dbConnect();
 
       const Task = mongoose.models.Task;
-      const Users = mongoose.models.Users;
+      const User = mongoose.models.User;
 
-      if (!Task || !Users) {
-        console.error("Task or Users model not found");
+      if (!Task || !User) {
+        console.error("Task or User model not found");
         return;
       }
 
       // Get user data
-      const user = await Users.findById(reminder.userId);
+      const user = await User.findById(reminder.userId);
 
       if (!user || !user.email) {
         console.log("User not found or no email for userId:", reminder.userId);
@@ -285,6 +420,16 @@ export class ReminderService {
       console.log("📅 Overdue check scheduled for:", tomorrow.toLocaleString());
     } catch (error) {
       console.error("Failed to schedule overdue check:", error);
+    }
+  }
+
+  static async initializeUserReminders(userId: string): Promise<void> {
+    try {
+      await this.scheduleDailyDigest(userId);
+      await this.scheduleOverdueCheck(userId);
+      console.log("✅ Initialized reminders for user:", userId);
+    } catch (error) {
+      console.error("Failed to initialize user reminders:", error);
     }
   }
 }
