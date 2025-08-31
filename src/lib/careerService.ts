@@ -1,5 +1,9 @@
 // lib/careerService.ts
-
+// Updated lib/careerService.ts integration
+import { hybridCareerService } from './services/hybridCareerService';
+import { dataQualityManager } from './services/dataQualityManager';
+import { cacheManager } from './services/cacheManager';
+import { JobRecommendation as ModelJobRecommendation } from '../models/Career';
 // Define an interface for the application data
 interface JobApplicationData {
   resume?: string; // File path or base64 encoded resume
@@ -13,6 +17,8 @@ interface JobApplicationData {
 export interface UserProfile {
   _id: string;
   userId: string;
+  name: string;
+  email: string;
   personalInfo: {
     firstName: string;
     lastName: string;
@@ -416,17 +422,44 @@ class CareerService {
     limit: number = 20
   ): Promise<CareerTip[]> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/api/career/tips?userId=${userId}&limit=${limit}`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch career tips");
+      const user = await this.getUserProfile(userId);
+      if (!user) {
+        return this.getMockTips();
       }
-      const data = await response.json();
-      return data.tips || this.getMockTips();
+
+      // Check cache first
+      const cachedTips = await this.getCachedTips(userId);
+      if (cachedTips && cachedTips.length > 0) {
+        return cachedTips.slice(0, limit);
+      }
+
+      // Generate new tips using AI
+      const tips = await aiService.generatePersonalizedTips(user);
+
+      // Convert AI-generated tips to CareerTip format
+      const formattedTips = tips.map((tipContent, index) => ({
+        _id: `ai_tip_${Date.now()}_${index}`,
+        title: this.generateTipTitle(tipContent),
+        content: tipContent,
+        category: this.categorizeTip(tipContent) as CareerTip["category"],
+        difficulty: "intermediate" as const,
+        timeToImplement: "15-30 minutes",
+        tags: this.extractTipTags(tipContent, user),
+        isPersonalized: true,
+        relevanceScore: 85 + Math.random() * 10,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        targetAudience: this.getTargetAudience(user),
+        aiGenerated: true,
+      }));
+
+      // Cache the tips
+      await this.cacheTips(userId, formattedTips);
+
+      return formattedTips.slice(0, limit);
     } catch (error) {
-      console.error("Error fetching career tips:", error);
-      return this.getMockTips();
+      console.error("Error fetching personalized tips:", error);
+      return this.getMockTips().slice(0, limit);
     }
   }
 
@@ -449,7 +482,7 @@ class CareerService {
     }
   }
 
-  // Get job recommendations with AI-powered matching
+  // Updated job recommendations with real-time data
   async getJobRecommendations(
     userId: string,
     filters?: {
@@ -462,32 +495,25 @@ class CareerService {
     limit: number = 20
   ): Promise<JobRecommendation[]> {
     try {
-      const queryParams = new URLSearchParams({
-        userId,
-        limit: limit.toString(),
-        ...(filters &&
-          Object.fromEntries(
-            Object.entries(filters)
-              .filter(([value]) => value !== undefined)
-              .map(([key, value]) => [key, value!.toString()])
-          )),
-      });
-
-      const response = await fetch(
-        `${this.baseUrl}/api/career/jobs?${queryParams}`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch job recommendations");
+      const user = await this.getUserProfile(userId);
+      if (!user) {
+        return this.getMockJobs().slice(0, limit);
       }
-      const data = await response.json();
-      return data.jobs || this.getMockJobs();
+
+      // Use real-time career service
+      const jobs =
+        await realTimeCareerService.getPersonalizedJobRecommendations(
+          user,
+          filters
+        );
+      return jobs.slice(0, limit);
     } catch (error) {
       console.error("Error fetching job recommendations:", error);
-      return this.getMockJobs();
+      return this.getMockJobs().slice(0, limit);
     }
   }
 
-  // Get freelance opportunities
+  // Updated freelance opportunities with real data
   async getFreelanceOpportunities(
     userId: string,
     filters?: {
@@ -499,21 +525,21 @@ class CareerService {
     limit: number = 15
   ): Promise<FreelanceOpportunity[]> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/api/career/freelance?userId=${userId}&limit=${limit}`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch freelance opportunities");
+      const user = await this.getUserProfile(userId);
+      if (!user) {
+        return this.getMockFreelanceOps().slice(0, limit);
       }
-      const data = await response.json();
-      return data.opportunities || this.getMockFreelanceOps();
+
+      const opportunities =
+        await realTimeCareerService.getFreelanceOpportunities(user);
+      return opportunities.slice(0, limit);
     } catch (error) {
       console.error("Error fetching freelance opportunities:", error);
-      return this.getMockFreelanceOps();
+      return this.getMockFreelanceOps().slice(0, limit);
     }
   }
 
-  // Get small businesses directory
+  // Updated small businesses with real data
   async getSmallBusinesses(
     filters?: {
       category?: string;
@@ -525,28 +551,145 @@ class CareerService {
     limit: number = 25
   ): Promise<SmallBusiness[]> {
     try {
-      const queryParams = new URLSearchParams({
-        limit: limit.toString(),
-        ...(filters &&
-          Object.fromEntries(
-            Object.entries(filters)
-              .filter(([value]) => value !== undefined)
-              .map(([key, value]) => [key, value!.toString()])
-          )),
-      });
-
-      const response = await fetch(
-        `${this.baseUrl}/api/career/businesses?${queryParams}`
+      const businesses = await realTimeCareerService.getSmallBusinesses(
+        filters
       );
-      if (!response.ok) {
-        throw new Error("Failed to fetch small businesses");
-      }
-      const data = await response.json();
-      return data.businesses || this.getMockBusinesses();
+      return businesses.slice(0, limit);
     } catch (error) {
       console.error("Error fetching small businesses:", error);
-      return this.getMockBusinesses();
+      return this.getMockBusinesses().slice(0, limit);
     }
+  }
+
+  // Helper methods for caching
+  private async getCachedInsights(
+    userId: string
+  ): Promise<AICareerInsight | null> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/api/career/insights?userId=${userId}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        // Check if insights are recent (within 7 days)
+        const generatedAt = new Date(data.generatedAt);
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+        if (generatedAt > weekAgo) {
+          return data;
+        }
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  private async getCachedTips(userId: string): Promise<CareerTip[] | null> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/api/career/tips?userId=${userId}&cached=true`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        return data.tips || null;
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  private async cacheInsights(
+    userId: string,
+    insights: AICareerInsight
+  ): Promise<void> {
+    try {
+      await fetch(`${this.baseUrl}/api/career/insights`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId, ...insights }),
+      });
+    } catch (error) {
+      console.error("Error caching insights:", error);
+    }
+  }
+
+  private async cacheTips(userId: string, tips: CareerTip[]): Promise<void> {
+    try {
+      await fetch(`${this.baseUrl}/api/career/tips`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId, tips }),
+      });
+    } catch (error) {
+      console.error("Error caching tips:", error);
+    }
+  }
+
+  // Utility methods for AI tip processing
+  private generateTipTitle(content: string): string {
+    const firstSentence = content.split(".")[0];
+    return firstSentence.length > 60
+      ? firstSentence.substring(0, 57) + "..."
+      : firstSentence;
+  }
+
+  private categorizeTip(content: string): string {
+    const text = content.toLowerCase();
+
+    if (text.includes("network") || text.includes("connect"))
+      return "networking";
+    if (
+      text.includes("skill") ||
+      text.includes("learn") ||
+      text.includes("course")
+    )
+      return "skills";
+    if (text.includes("interview") || text.includes("resume"))
+      return "interview";
+    if (text.includes("balance") || text.includes("family"))
+      return "work-life-balance";
+    if (text.includes("salary") || text.includes("negotiate")) return "salary";
+
+    return "career-change";
+  }
+
+  private extractTipTags(content: string, user: UserProfile): string[] {
+    const tags = [];
+    const text = content.toLowerCase();
+
+    if (text.includes("remote")) tags.push("remote-work");
+    if (text.includes("network")) tags.push("networking");
+    if (text.includes("skill")) tags.push("professional-development");
+    if (text.includes("family") || text.includes("parent"))
+      tags.push("work-life-balance");
+    if (user.industry)
+      tags.push(user.industry.toLowerCase().replace(/\s+/g, "-"));
+
+    return tags.slice(0, 4); // Limit to 4 tags
+  }
+
+  private getTargetAudience(user: UserProfile): string {
+    const audiences = [];
+
+    if (user.personalInfo?.hasChildren) {
+      audiences.push("working-parents");
+    }
+
+    if (user.jobSearchStatus?.activelyLooking) {
+      audiences.push("job-seekers");
+    }
+
+    if (user.careerPreferences?.workArrangements?.includes("remote")) {
+      audiences.push("remote-workers");
+    }
+
+    return audiences.join(", ") || "professionals";
   }
 
   // Generate AI career insights
@@ -555,19 +698,27 @@ class CareerService {
     forceRegenerate: boolean = false
   ): Promise<AICareerInsight> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/profile/insights`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userId, forceRegenerate }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate AI insights");
+      // Get user profile first
+      const user = await this.getUserProfile(userId);
+      if (!user) {
+        throw new Error("User profile not found");
       }
-      const data = await response.json();
-      return data || this.getMockAIInsights(userId);
+
+      // Check cache first (unless force regenerate)
+      if (!forceRegenerate) {
+        const cachedInsights = await this.getCachedInsights(userId);
+        if (cachedInsights) {
+          return cachedInsights;
+        }
+      }
+
+      // Generate new insights using Hugging Face
+      const insights = await aiService.generateCareerInsights(user);
+
+      // Cache the results
+      await this.cacheInsights(userId, insights);
+
+      return insights;
     } catch (error) {
       console.error("Error generating AI insights:", error);
       return this.getMockAIInsights(userId);
@@ -1388,3 +1539,126 @@ class CareerService {
 }
 
 export const careerService = new CareerService();
+
+// Add these methods to your existing CareerService class
+class EnhancedCareerService extends CareerService {
+  async getPersonalizedJobRecommendations(
+    userProfile: UserProfile,
+    filters?: Record<string, any>
+  ): Promise<JobRecommendation[]> {
+    const cacheKey = cacheManager.generateKey('jobs', { 
+      userId: userProfile._id, 
+      ...filters 
+    });
+    
+    // Check cache first
+    const cachedJobs = cacheManager.get<JobRecommendation[]>(cacheKey);
+    if (cachedJobs) {
+      console.log('Returning cached job recommendations');
+      return cachedJobs;
+    }
+    
+    try {
+      // Get jobs from hybrid service (real + fallback)
+      const rawJobs = await hybridCareerService.getPersonalizedJobRecommendations(userProfile, filters);
+      
+      // Clean and validate data
+      const cleanJobs = dataQualityManager.cleanAndValidateJobs(rawJobs);
+      
+      // Convert model JobRecommendations to service JobRecommendations
+      const convertedJobs: JobRecommendation[] = cleanJobs.map((job: ModelJobRecommendation) => ({
+        _id: job._id,
+        title: job.title,
+        company: job.company,
+        location: job.location,
+        workArrangement: job.workArrangement,
+        salaryRange: job.salaryRange,
+        requiredSkills: job.requiredSkills || [],
+        preferredSkills: job.preferredSkills || [],
+        description: job.description,
+        matchScore: job.matchScore,
+        isMaternityFriendly: job.isMaternityFriendly || false,
+        flexibleHours: job.flexibleHours || false,
+        benefitsHighlights: job.benefitsHighlights || [],
+        applicationDeadline: job.applicationDeadline,
+        applicationUrl: job.applicationUrl,
+        reasonsForMatch: job.reasonsForMatch,
+        postedDate: job.postedDate,
+        jobType: job.jobType || 'full-time',
+        experienceLevel: job.experienceLevel || 'mid',
+        companySize: job.companySize || 'medium',
+        companyStage: job.companyStage || 'established',
+        diversityCommitment: job.diversityCommitment || false,
+        parentingSupport: job.parentingSupport || [],
+      }));
+      
+      // Cache for 30 minutes
+      cacheManager.set(cacheKey, convertedJobs, 30);
+      
+      return convertedJobs;
+    } catch (error) {
+      console.error('Error in enhanced job recommendations:', error);
+      // Return empty array rather than failing
+      return [];
+    }
+  }
+  
+  async getPersonalizedTips(
+    userId: string,
+    limit: number = 20
+  ): Promise<CareerTip[]> {
+    const cacheKey = cacheManager.generateKey('tips', { userId });
+    
+    const cachedTips = cacheManager.get<CareerTip[]>(cacheKey);
+    if (cachedTips) {
+      return cachedTips;
+    }
+    
+    try {
+      // Get user profile first
+      const userProfile = await this.getUserProfile(userId);
+      if (!userProfile) {
+        console.warn(`User profile not found for userId: ${userId}`);
+        return super.getPersonalizedTips(userId, limit);
+      }
+      
+      const rawTips = await hybridCareerService.getPersonalizedTips(userProfile);
+      const cleanTips = dataQualityManager.cleanAndValidateTips(rawTips);
+      
+      // Apply limit if specified
+      const limitedTips = limit > 0 ? cleanTips.slice(0, limit) : cleanTips;
+      
+      // Cache for 4 hours
+      cacheManager.set(cacheKey, limitedTips, 240);
+      
+      return limitedTips;
+    } catch (error) {
+      console.error('Error in enhanced tips generation:', error);
+      // Fallback to parent class implementation
+      return super.getPersonalizedTips(userId, limit);
+    }
+  }
+  
+  async generateComprehensiveInsights(userProfile: UserProfile): Promise<AICareerInsight> {
+    const cacheKey = cacheManager.generateKey('insights', { userId: userProfile._id });
+    
+    const cachedInsights = cacheManager.get<AICareerInsight>(cacheKey);
+    if (cachedInsights) {
+      return cachedInsights;
+    }
+    
+    try {
+      const insights = await hybridCareerService.generateAICareerInsights(userProfile);
+      
+      // Cache for 24 hours
+      cacheManager.set(cacheKey, insights, 1440);
+      
+      return insights;
+    } catch (error) {
+      console.error('Error generating comprehensive insights:', error);
+      throw error;
+    }
+  }
+}
+
+export const enhancedCareerService = new EnhancedCareerService();

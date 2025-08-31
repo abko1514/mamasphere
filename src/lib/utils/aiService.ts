@@ -1,450 +1,393 @@
-interface PrioritizeTaskRequest {
-  title: string;
-  description?: string;
-  dueDate?: string | null;
-}
-
-interface PrioritizeTaskResponse {
-  priority: number;
-  aiProcessed: boolean;
-}
+// lib/services/aiService.ts
+import { UserProfile } from "@/models/Career";
 
 export class AIService {
-  static fallbackPrioritization(
-    title: string,
-    description: string = "",
-    dueDate: string | null = null
-  ): number {
-    let priority: number = 3; // Default medium priority
+  private huggingFaceToken: string;
+  private baseUrl = "https://api-inference.huggingface.co/models";
 
-    const urgentKeywords: string[] = [
-      // Existing...
-      "urgent",
-      "asap",
-      "emergency",
-      "immediate",
-      "critical",
-      "now",
-      "today",
-      // ADD THESE MOM-SPECIFIC:
-      "kids sick",
-      "child sick",
-      "fever",
-      "injury",
-      "bleeding",
-      "crying nonstop",
-      "pediatrician",
-      "school pickup",
-      "diaper emergency",
-      "out of diapers",
-      "no milk",
-      "broken",
-      "leaking",
-      "overflow",
-    ];
-
-    const importantKeywords: string[] = [
-      // Existing...
-      "important",
-      "meeting",
-      "deadline",
-      "appointment",
-      "doctor",
-      "school",
-      "work",
-      // ADD THESE:
-      "permission slip",
-      "school event",
-      "teacher meeting",
-      "parent conference",
-      "before nap",
-      "bedtime routine",
-      "feeding time",
-      "medication time",
-      "pickup time",
-    ];
-
-    const lowPriorityKeywords: string[] = [
-      // Existing...
-      "sometime",
-      "eventually",
-      "when possible",
-      "low priority",
-      "maybe",
-      "later",
-      // ADD THESE:
-      "when free",
-      "spare time",
-      "weekend project",
-      "nice to have",
-    ];
-
-    const text: string = `${title} ${description}`.toLowerCase();
-
-    // Check for urgent keywords
-    if (urgentKeywords.some((keyword: string) => text.includes(keyword))) {
-      priority = Math.min(priority + 2, 5);
-    }
-
-    // Check for important keywords
-    if (importantKeywords.some((keyword: string) => text.includes(keyword))) {
-      priority = Math.min(priority + 1, 5);
-    }
-
-    // Check for low priority keywords
-    if (lowPriorityKeywords.some((keyword: string) => text.includes(keyword))) {
-      priority = Math.max(priority - 1, 1);
-    }
-
-    // Due date impact
-    if (dueDate) {
-      const daysUntilDue: number = Math.ceil(
-        (new Date(dueDate).getTime() - new Date().getTime()) /
-          (1000 * 60 * 60 * 24)
-      );
-      if (daysUntilDue <= 0) {
-        priority = 5; // Overdue = urgent
-      } else if (daysUntilDue <= 1) {
-        priority = Math.min(priority + 2, 5);
-      } else if (daysUntilDue <= 3) {
-        priority = Math.min(priority + 1, 5);
-      }
-    }
-
-    // Time context adjustments
-    const now = new Date();
-    const currentHour = now.getHours();
-
-    // Morning urgency (6-9 AM)
-    if (currentHour >= 6 && currentHour <= 9 && text.includes("morning")) {
-      priority = Math.min(priority + 1, 5);
-    }
-
-    // Evening routine urgency (6-8 PM)
-    if (
-      currentHour >= 18 &&
-      currentHour <= 20 &&
-      (text.includes("bedtime") ||
-        text.includes("dinner") ||
-        text.includes("bath"))
-    ) {
-      priority = Math.min(priority + 1, 5);
-    }
-
-    // Friday prep tasks
-    if (now.getDay() === 5 && text.includes("weekend")) {
-      priority = Math.min(priority + 1, 5);
-    }
-
-    // ADD THIS LINE HERE - Apply mom priority boost
-    priority = Math.min(
-      priority + AIService.getMomPriorityBoost(title, description),
-      5
-    );
-
-    return Math.max(1, Math.min(5, priority));
+  constructor() {
+    this.huggingFaceToken = process.env.HUGGINGFACE_API_KEY || "";
   }
 
-  static async prioritizeTask(
-    title: string,
-    description: string = "",
-    dueDate: string | null = null
-  ): Promise<number> {
+  // Generate career tips using Hugging Face's free text generation
+  async generatePersonalizedTips(user: UserProfile): Promise<string[]> {
     try {
-      const requestBody: PrioritizeTaskRequest = {
-        title,
-        description,
-        dueDate,
-      };
+      const prompt = this.buildTipsPrompt(user);
 
-      const response = await fetch("/api/ai/prioritize", {
+      const response = await fetch(`${this.baseUrl}/microsoft/DialoGPT-large`, {
         method: "POST",
         headers: {
+          Authorization: `Bearer ${this.huggingFaceToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          inputs: prompt,
+          parameters: {
+            max_length: 500,
+            temperature: 0.7,
+            num_return_sequences: 5,
+          },
+        }),
       });
 
       if (!response.ok) {
-        console.warn("AI service unavailable, using fallback");
-        return AIService.fallbackPrioritization(title, description, dueDate);
+        console.warn("Hugging Face API failed, using fallback");
+        return this.getFallbackTips(user);
       }
 
-      const data: PrioritizeTaskResponse = await response.json();
-
-      // If AI processing failed, use fallback
-      if (!data.aiProcessed) {
-        return AIService.fallbackPrioritization(title, description, dueDate);
-      }
-      return data.priority;
+      const result = await response.json();
+      return this.parseTipsFromResponse(result);
     } catch (error) {
-      console.error("AI prioritization failed:", error);
-      // Fallback to rule-based prioritization
-      return AIService.fallbackPrioritization(title, description, dueDate);
+      console.error("Error generating AI tips:", error);
+      return this.getFallbackTips(user);
     }
   }
 
-  static categorizeTask(title: string, description: string = ""): string {
-    const text = `${title} ${description}`.toLowerCase();
+  // Generate career insights
+  async generateCareerInsights(user: UserProfile): Promise<any> {
+    try {
+      const prompt = this.buildInsightsPrompt(user);
 
-    const categories: { [key: string]: string[] } = {
-      household: [
-        "clean",
-        "cleaning",
-        "cook",
-        "cooking",
-        "kitchen",
-        "laundry",
-        "dishes",
-        "vacuum",
-        "organize",
-        "organizing",
-        "grocery",
-        "groceries",
-        "shopping",
-        "tidying",
-        "tidy",
-        "sweep",
-        "mop",
-        "dust",
-        "bathroom",
-        "bedroom",
-        "declutter",
-        "meal prep",
-        "pantry",
-        "fridge",
-        "toys",
-        "playroom",
-        "nursery",
-        "dishwasher",
-        "washer",
-        "dryer",
-        "microwave",
-        "repair",
-        "fix",
-        "broken",
-        "maintenance",
-      ],
-      kids: [
-        "school",
-        "homework",
-        "pickup",
-        "pick up",
-        "drop off",
-        "dropoff",
-        "playdate",
-        "bedtime",
-        "bath",
-        "diaper",
-        "feeding",
-        "nap",
-        "story",
-        "children",
-        "child",
-        "kid",
-        "kids",
-        "daycare",
-        "preschool",
-        "kindergarten",
-        "baby",
-        "toddler",
-        "teenager",
-        "backpack",
-        "lunchbox",
-        "sports practice",
-        "recital",
-        "field trip",
-        "potty training",
-        "sleep training",
-        "homework help",
-        "parent conference",
-        "school event",
-        "permission slip",
-      ],
-      health: [
-        "pediatrician",
-        "fever",
-        "sick",
-        "injury",
-        "allergy",
-        "vaccine",
-        "immunization",
-        "emergency",
-        "urgent care",
-        "specialist",
-        "doctor",
-        "dr",
-        "appointment",
-        "appt",
-        "medicine",
-        "medication",
-        "exercise",
-        "workout",
-        "gym",
-        "dentist",
-        "dental",
-        "checkup",
-        "check up",
-        "therapy",
-        "physical",
-        "mental",
-        "vitamins",
-        "prescription",
-        "hospital",
-        "clinic",
-      ],
-      work: [
-        "meeting",
-        "me time",
-        "bubble bath",
-        "hair",
-        "nails",
-        "alone time",
-        "project",
-        "deadline",
-        "call",
-        "email",
-        "presentation",
-        "report",
-        "office",
-        "boss",
-        "client",
-        "conference",
-        "zoom",
-        "teams",
-        "slack",
-        "review",
-        "proposal",
-        "budget",
-        "planning",
-      ],
-      personal: [
-        "hobby",
-        "hobbies",
-        "friend",
-        "friends",
-        "relax",
-        "relaxing",
-        "read",
-        "reading",
-        "book",
-        "movie",
-        "movies",
-        "tv",
-        "self-care",
-        "self care",
-        "spa",
-        "massage",
-        "meditation",
-        "yoga",
-        "journal",
-        "journaling",
-        "craft",
-        "crafting",
-      ],
-      finances: [
-        "budget",
-        "bills",
-        "insurance",
-        "savings",
-        "taxes",
-        "bank",
-        "mortgage",
-        "credit card",
-        "payment",
-        "invoice",
-        "expense",
-        "money",
-        "financial",
-        "loan",
-      ],
-    };
-
-    // Calculate category scores
-    const categoryScores: { [key: string]: number } = {};
-
-    // REPLACE the simple keyword counting with:
-    for (const [category, keywords] of Object.entries(categories)) {
-      let score = 0;
-      keywords.forEach((keyword) => {
-        const matches = (text.match(new RegExp(keyword, "g")) || []).length;
-        score += matches;
-        // Bonus for exact word matches
-        if (
-          text.includes(` ${keyword} `) ||
-          text.startsWith(keyword) ||
-          text.endsWith(keyword)
-        ) {
-          score += 0.5;
-        }
+      // Using a smaller, faster model for insights
+      const response = await fetch(`${this.baseUrl}/google/flan-t5-base`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.huggingFaceToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inputs: prompt,
+          parameters: {
+            max_length: 800,
+            temperature: 0.6,
+          },
+        }),
       });
-      categoryScores[category] = score;
-    }
 
-    // Find category with highest score
-    const bestCategory = Object.entries(categoryScores).reduce((a, b) =>
-      a[1] > b[1] ? a : b
+      if (!response.ok) {
+        return this.getFallbackInsights(user);
+      }
+
+      const result = await response.json();
+      return this.parseInsightsFromResponse(result, user);
+    } catch (error) {
+      console.error("Error generating AI insights:", error);
+      return this.getFallbackInsights(user);
+    }
+  }
+
+  private buildTipsPrompt(user: UserProfile): string {
+    return `Generate 5 personalized career tips for a professional with this profile:
+- Role: ${user.currentRole || "Professional"}
+- Industry: ${user.industry || "General"}
+- Experience: ${user.yearsOfExperience || 0} years
+- Skills: ${user.skillsAndExperience?.join(", ") || "Various skills"}
+- Work Preference: ${user.workPreference || "Flexible"}
+- Goals: ${user.careerGoals || "Career advancement"}
+
+Focus on actionable, specific advice that considers work-life balance and professional growth.`;
+  }
+
+  private buildInsightsPrompt(user: UserProfile): string {
+    return `Analyze this professional profile and provide career insights:
+- Current Role: ${user.currentRole}
+- Industry: ${user.industry}
+- Years of Experience: ${user.yearsOfExperience}
+- Skills: ${user.skillsAndExperience?.join(", ")}
+- Location: ${user.location}
+- Work Preference: ${user.workPreference}
+
+Provide insights on:
+1. Strengths analysis
+2. Skill gaps
+3. Career path suggestions
+4. Market trends
+5. Salary insights`;
+  }
+
+  private parseTipsFromResponse(response: any): string[] {
+    try {
+      if (Array.isArray(response)) {
+        return response
+          .map((item) =>
+            typeof item === "string" ? item : item.generated_text || ""
+          )
+          .filter((tip) => tip.length > 10)
+          .slice(0, 5);
+      }
+
+      if (response.generated_text) {
+        // Split by common delimiters and clean up
+        return response.generated_text
+          .split(/\d+\.|•|\n/)
+          .map((tip: string) => tip.trim())
+          .filter((tip: string) => tip.length > 20)
+          .slice(0, 5);
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Error parsing tips response:", error);
+      return [];
+    }
+  }
+
+  private parseInsightsFromResponse(response: any, user: UserProfile): any {
+    try {
+      const text = response.generated_text || response[0]?.generated_text || "";
+
+      return {
+        _id: `ai_insight_${Date.now()}`,
+        userId: user._id,
+        insights: {
+          strengthsAnalysis:
+            this.extractSection(text, "strengths") ||
+            this.getDefaultStrengths(user),
+          improvementAreas:
+            this.extractSection(text, "gaps") ||
+            this.getDefaultImprovements(user),
+          careerPathSuggestions:
+            this.extractSection(text, "career") ||
+            this.getDefaultCareerPaths(user),
+          skillGapAnalysis:
+            this.extractSection(text, "skills") ||
+            this.getDefaultSkillGaps(user),
+          marketTrends:
+            this.extractSection(text, "trends") ||
+            this.getDefaultMarketTrends(user),
+          salaryInsights: {
+            currentMarketRate: this.extractSalaryInfo(text, user),
+            growthPotential: "15-25% growth potential with skill development",
+            recommendations: [
+              "Consider additional certifications",
+              "Build leadership experience",
+            ],
+          },
+          workLifeBalanceRecommendations: this.getWorkLifeRecommendations(user),
+          networkingOpportunities: this.getNetworkingOpportunities(user),
+          personalizedAdvice: this.getPersonalizedAdvice(user),
+          nextUpdateDue: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+        confidenceScore: 75,
+        personalizedTips: [],
+        generatedAt: new Date(),
+        lastUpdated: new Date(),
+      };
+    } catch (error) {
+      console.error("Error parsing insights:", error);
+      return this.getFallbackInsights(user);
+    }
+  }
+
+  private extractSection(text: string, keyword: string): string[] | null {
+    const lines = text.split("\n");
+    const relevantLines = lines.filter(
+      (line) =>
+        line.toLowerCase().includes(keyword) ||
+        line.includes("•") ||
+        line.match(/\d+\./)
     );
 
-    return bestCategory[1] > 0 ? bestCategory[0] : "general";
+    if (relevantLines.length > 0) {
+      return relevantLines
+        .map((line) => line.replace(/^\d+\.|\•/, "").trim())
+        .filter((line) => line.length > 10)
+        .slice(0, 3);
+    }
+
+    return null;
   }
 
-  static getMotivationalMessage(priority: number): string {
-    const messages: { [key: number]: string[] } = {
-      5: [
-        "🚨 This is urgent! You've got this, mama!",
-        "⚡ Time to tackle this high-priority task!",
-        "🔥 This one's important - let's get it done!",
-      ],
-      4: [
-        "💪 High priority task - you're amazing!",
-        "⭐ This is important for your day!",
-        "🎯 Focus time - you can handle this!",
-      ],
-      3: [
-        "📋 Medium priority - steady progress!",
-        "✨ Another step towards your goals!",
-        "🌟 You're doing great, keep going!",
-      ],
-      2: [
-        "📝 Nice and easy does it!",
-        "🌸 Take your time with this one!",
-        "💖 Every little step counts!",
-      ],
-      1: [
-        "🌺 Low pressure, high love!",
-        "🦋 When you have a moment...",
-        "💕 No rush on this one, mama!",
-      ],
+  private extractSalaryInfo(text: string, user: UserProfile): string {
+    const experience = user.yearsOfExperience || 0;
+    const industry = user.industry || "General";
+
+    // Basic salary estimation logic
+    const baseRanges: { [key: string]: [number, number] } = {
+      Technology: [80000, 150000],
+      Healthcare: [60000, 120000],
+      Marketing: [50000, 100000],
+      Education: [40000, 80000],
+      Finance: [70000, 140000],
     };
 
-    const priorityMessages = messages[priority] || messages[3];
-    return priorityMessages[
-      Math.floor(Math.random() * priorityMessages.length)
+    const range = baseRanges[industry] || [45000, 90000];
+    const experienceMultiplier = 1 + experience * 0.05;
+
+    const min = Math.round(range[0] * experienceMultiplier);
+    const max = Math.round(range[1] * experienceMultiplier);
+
+    return `$${min.toLocaleString()} - $${max.toLocaleString()} based on your experience and industry`;
+  }
+
+  private getFallbackTips(user: UserProfile): string[] {
+    const tips = [
+      "Update your LinkedIn profile with recent achievements and skills",
+      "Network with professionals in your industry through virtual events",
+      "Consider taking online courses to fill skill gaps in your field",
+      "Set up informational interviews with people in roles you're interested in",
+      "Create a portfolio showcasing your best work and projects",
+    ];
+
+    // Personalize based on user profile
+    if (user.workPreference === "remote") {
+      tips.push(
+        "Highlight your remote work skills and self-management abilities"
+      );
+    }
+
+    if (user.availabilityStatus === "returning_to_work") {
+      tips.push(
+        "Consider contract or part-time roles to ease back into the workforce"
+      );
+    }
+
+    return tips.slice(0, 5);
+  }
+
+  private getFallbackInsights(user: UserProfile): any {
+    return {
+      _id: `ai_insight_${Date.now()}`,
+      userId: user._id,
+      insights: {
+        strengthsAnalysis: this.getDefaultStrengths(user),
+        improvementAreas: this.getDefaultImprovements(user),
+        careerPathSuggestions: this.getDefaultCareerPaths(user),
+        skillGapAnalysis: this.getDefaultSkillGaps(user),
+        marketTrends: this.getDefaultMarketTrends(user),
+        salaryInsights: {
+          currentMarketRate: this.extractSalaryInfo("", user),
+          growthPotential: "Strong growth potential in your field",
+          recommendations: [
+            "Continue developing technical skills",
+            "Expand your professional network",
+          ],
+        },
+        workLifeBalanceRecommendations: this.getWorkLifeRecommendations(user),
+        networkingOpportunities: this.getNetworkingOpportunities(user),
+        personalizedAdvice: this.getPersonalizedAdvice(user),
+        nextUpdateDue: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+      confidenceScore: 65,
+      personalizedTips: [],
+      generatedAt: new Date(),
+      lastUpdated: new Date(),
+    };
+  }
+
+  private getDefaultStrengths(user: UserProfile): string[] {
+    const strengths = [];
+
+    if (user.yearsOfExperience && user.yearsOfExperience >= 5) {
+      strengths.push(
+        "Extensive professional experience provides strong foundation"
+      );
+    }
+
+    if (user.skillsAndExperience && user.skillsAndExperience.length >= 3) {
+      strengths.push(
+        "Diverse skill set demonstrates adaptability and continuous learning"
+      );
+    }
+
+    if (user.workPreference === "remote" || user.workPreference === "hybrid") {
+      strengths.push(
+        "Flexibility with work arrangements shows modern workplace adaptability"
+      );
+    }
+
+    strengths.push("Professional commitment to career development and growth");
+
+    return strengths;
+  }
+
+  private getDefaultImprovements(user: UserProfile): string[] {
+    return [
+      "Consider expanding digital skills relevant to your industry",
+      "Strengthen your professional network through industry events",
+      "Develop leadership and communication skills for career advancement",
     ];
   }
 
-  static getMomPriorityBoost(title: string, description: string = ""): number {
-    const text = `${title} ${description}`.toLowerCase();
-    let boost = 0;
+  private getDefaultCareerPaths(user: UserProfile): string[] {
+    const paths = [];
+    const experience = user.yearsOfExperience || 0;
 
-    // Health/safety gets highest boost
-    if (
-      text.match(/\b(sick|fever|injury|doctor|emergency|medicine|medication)\b/)
-    ) {
-      boost += 2;
+    if (experience >= 7) {
+      paths.push("Senior leadership roles in your current field");
+      paths.push("Consulting or advisory positions leveraging your expertise");
+    } else if (experience >= 3) {
+      paths.push("Team lead or management positions");
+      paths.push("Specialist roles in your area of expertise");
+    } else {
+      paths.push("Skill development and specialization opportunities");
+      paths.push("Cross-functional roles to broaden experience");
     }
 
-    // School/childcare time-sensitive
-    if (text.match(/\b(school|pickup|drop off|teacher|parent conference)\b/)) {
-      boost += 1;
+    if (user.workPreference === "remote") {
+      paths.push("Remote-first companies and distributed teams");
     }
 
-    // Essential supplies
-    if (text.match(/\b(out of|no |need |buy )(diapers|milk|food|medicine)\b/)) {
-      boost += 2;
+    return paths;
+  }
+
+  private getDefaultSkillGaps(user: UserProfile): string[] {
+    return [
+      "Digital literacy and emerging technology familiarity",
+      "Data analysis and interpretation capabilities",
+      "Project management and organizational skills",
+      "Communication and collaboration tools proficiency",
+    ];
+  }
+
+  private getDefaultMarketTrends(user: UserProfile): string[] {
+    return [
+      "Remote and hybrid work models continue to expand",
+      "Skills-based hiring becoming more prevalent than degree requirements",
+      "Companies prioritizing diversity and inclusion initiatives",
+      "Increasing focus on work-life balance and employee wellbeing",
+    ];
+  }
+
+  private getWorkLifeRecommendations(user: UserProfile): string[] {
+    return [
+      "Look for companies with strong family support policies",
+      "Consider flexible work arrangements that fit your lifestyle",
+      "Prioritize roles with outcome-based rather than time-based metrics",
+      "Research company culture and employee satisfaction ratings",
+    ];
+  }
+
+  private getNetworkingOpportunities(user: UserProfile): string[] {
+    const industry = user.industry || "Professional";
+    return [
+      `${industry} professional associations and local chapters`,
+      "LinkedIn industry groups and professional networks",
+      "Virtual conferences and webinars in your field",
+      "Alumni networks from your educational background",
+    ];
+  }
+
+  private getPersonalizedAdvice(user: UserProfile): string[] {
+    const advice = [
+      "Focus on roles that align with your values and career goals",
+      "Leverage your unique experience and perspective as differentiators",
+    ];
+
+    if (user.availabilityStatus === "returning_to_work") {
+      advice.push(
+        "Consider gradual re-entry through part-time or project work"
+      );
     }
 
-    return Math.min(boost, 2); // Cap at +2
+    if (user.childrenAges && user.childrenAges.length > 0) {
+      advice.push(
+        "Your parenting experience has developed valuable professional skills"
+      );
+    }
+
+    return advice;
   }
 }
+
+export const aiService = new AIService();

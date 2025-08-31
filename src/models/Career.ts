@@ -42,6 +42,7 @@ export interface CareerTip {
   tags: string[];
   aiGenerated: boolean;
   relevanceScore?: number;
+  updatedAt: Date;
 }
 
 export interface JobRecommendation {
@@ -65,6 +66,9 @@ export interface JobRecommendation {
   postedDate: Date;
   matchScore: number;
   reasonsForMatch: string[];
+  experienceLevel: "entry" | "mid" | "senior" | "executive";
+  preferredSkills?: string[];
+  companySize?: "small" | "medium" | "large";
 }
 
 export interface SmallBusiness {
